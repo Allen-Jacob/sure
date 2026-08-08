@@ -130,7 +130,8 @@ export default class extends Controller {
     if (!this.holdActivated) {
       const dx = touchX - this.touchStartX;
       const dy = touchY - this.touchStartY;
-      if (dx * dx + dy * dy > 100) { // 10px radius
+      if (dx * dx + dy * dy > 100) {
+        // 10px radius
         this.cancelHold();
       }
       return;
@@ -142,7 +143,10 @@ export default class extends Controller {
     this.currentTouchX = touchX;
     this.currentTouchY = touchY;
 
-    const afterElement = this.getDragAfterElement(this.currentTouchX, this.currentTouchY);
+    const afterElement = this.getDragAfterElement(
+      this.currentTouchX,
+      this.currentTouchY,
+    );
     this.clearPlaceholders();
 
     if (afterElement == null) {
@@ -160,7 +164,10 @@ export default class extends Controller {
       return;
     }
 
-    const afterElement = this.getDragAfterElement(this.currentTouchX, this.currentTouchY);
+    const afterElement = this.getDragAfterElement(
+      this.currentTouchX,
+      this.currentTouchY,
+    );
     const container = this.element;
 
     if (afterElement == null) {
@@ -265,7 +272,10 @@ export default class extends Controller {
   }
 
   moveUp(section) {
-    const previousSibling = section.previousElementSibling;
+    const previousSibling = this.visibleSibling(
+      section,
+      "previousElementSibling",
+    );
     if (previousSibling?.hasAttribute("data-section-key")) {
       this.element.insertBefore(section, previousSibling);
       section.focus();
@@ -273,16 +283,22 @@ export default class extends Controller {
   }
 
   moveDown(section) {
-    const nextSibling = section.nextElementSibling;
+    const nextSibling = this.visibleSibling(section, "nextElementSibling");
     if (nextSibling?.hasAttribute("data-section-key")) {
       this.element.insertBefore(nextSibling, section);
       section.focus();
     }
   }
 
+  visibleSibling(section, direction) {
+    let sibling = section[direction];
+    while (sibling?.hidden) sibling = sibling[direction];
+    return sibling;
+  }
+
   getDragAfterElement(pointerX, pointerY) {
     const draggableElements = this.sectionTargets.filter(
-      (section) => section !== this.draggedElement,
+      (section) => section !== this.draggedElement && !section.hidden,
     );
 
     if (draggableElements.length === 0) return null;

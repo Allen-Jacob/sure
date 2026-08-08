@@ -1,0 +1,94 @@
+---
+fr:
+  pages:
+    dashboard:
+      cash_plan:
+        attention: À surveiller
+        up_to_date: En bonne voie
+        not_available: Non disponible
+        paycheck_configured: Paie configurée
+        paycheck_fallback: Revenu attendu
+        mixed_currency_notice:
+          one: "Un compte est exclu de cette vue quotidienne, car il n’est pas en %{currency}."
+          other: "%{count} comptes sont exclus de cette vue quotidienne, car ils ne sont pas en %{currency}."
+        customize:
+          button: Personnaliser
+          title: Choisir les widgets
+          description: Affiche ou retire les widgets. Ton choix est enregistré automatiquement.
+          hide: "Retirer le widget %{widget}"
+          empty_title: Aucun widget affiché
+          empty_description: Utilise Personnaliser pour ajouter les widgets que tu veux voir.
+          groups:
+            cash_plan: Quotidien
+            analysis: Analyses Sure
+        available:
+          title: Argent réellement disponible
+          description: Ce qu’il reste après tes engagements à court terme
+          helper: Utilisable sans toucher à l’argent déjà prévu ailleurs
+          cash: Solde des comptes
+          card_debt: Cartes de crédit
+          planned: Paiements prévus
+          reserved: Argent réservé
+        paycheck:
+          title: Prochaine paie
+          days_remaining: Jours restants
+          estimated: Estimation basée sur ton historique de salaire
+          empty_title: Aucune paie détectée
+          empty_description: Catégorise une transaction de salaire pour activer les estimations.
+        budget:
+          title: Budget jusqu’à la paie
+          description: Un repère simple pour tes dépenses
+          total_label: Total que tu peux encore dépenser
+          daily_label: Moyenne confortable par jour
+          for_days:
+            one: pour 1 jour
+            other: "pour %{count} jours"
+        spending:
+          title: Dépenses depuis la dernière paie
+          since: "Depuis le %{date}"
+          days:
+            one: 1 jour écoulé
+            other: "%{count} jours écoulés"
+          change: "%{percent} % vs période précédente"
+          previous_period: Période précédente comparable
+        credit_card:
+          title: Carte de crédit
+          current: Solde actuel
+          statement: Solde du relevé
+          due: Date d’échéance
+          repayable: Disponible pour la rembourser
+          empty_title: Aucune carte de crédit
+          empty_description: Ajoute un compte de carte pour suivre son remboursement.
+        allocation:
+          title: Répartition de la prochaine paie
+          description: Ordre suggéré selon tes engagements actuels
+          card: Carte de crédit
+          savings: Épargne
+          fixed: Dépenses fixes
+          free: Argent libre
+        goals:
+          title: Objectifs d’épargne
+          description: Progression de tes trois objectifs prioritaires
+          view_plan: Voir le plan
+          empty_title: Aucun objectif d’épargne
+          empty_description: Crée un objectif pour réserver l’argent de tes prochains projets.
+        purchases:
+          title: Achats prévus
+          description: Objectifs datés et impact d’un achat maintenant
+          price: Prix
+          saved: Déjà réservé
+          impact: Reste après achat
+          empty_title: Aucun achat prévu
+          empty_description: Ajoute une date cible à un objectif pour le suivre ici.
+        categories:
+          title: Dépenses par catégorie
+          description: Catégories principales depuis ta dernière paie
+          empty_title: Aucune dépense sur cette période
+          empty_description: Les catégories apparaîtront après de nouvelles dépenses.
+        review:
+          title: Transactions à vérifier
+          description: Éléments qui peuvent demander une décision rapide
+          uncategorized: Transactions sans catégorie
+          duplicates: Doublons possibles
+          missing_refunds: Remboursements attendus en retard
+          open_transactions: Vérifier les transactions

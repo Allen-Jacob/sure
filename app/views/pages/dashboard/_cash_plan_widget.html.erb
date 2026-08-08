@@ -1,0 +1,273 @@
+<% available = cash_plan.fetch(:available) %>
+<% spending = cash_plan.fetch(:spending) %>
+<% paycheck = cash_plan.fetch(:paycheck) %>
+<% card = cash_plan.fetch(:credit_card) %>
+<% budget = cash_plan.fetch(:budget) %>
+<% review = cash_plan.fetch(:review) %>
+
+<% case widget_key %>
+<% when "available" %>
+  <div class="flex min-h-48 flex-col px-4 pb-2">
+    <div class="flex items-start justify-between gap-4">
+      <p class="text-sm text-secondary"><%= t("pages.dashboard.cash_plan.available.description") %></p>
+      <%= render DS::Pill.new(
+        label: available.fetch(:amount).negative? ? t("pages.dashboard.cash_plan.attention") : t("pages.dashboard.cash_plan.up_to_date"),
+        tone: available.fetch(:amount).negative? ? :warning : :success,
+        marker: false,
+        show_dot: true
+      ) %>
+    </div>
+    <div class="mt-5">
+      <p class="text-4xl font-medium tracking-tight tabular-nums privacy-sensitive <%= available.fetch(:amount).negative? ? "text-destructive" : "text-primary" %>">
+        <%= available.fetch(:amount).format(precision: 0) %>
+      </p>
+      <p class="mt-1 text-sm text-secondary"><%= t("pages.dashboard.cash_plan.available.helper") %></p>
+    </div>
+    <dl class="mt-auto grid grid-cols-2 gap-x-6 gap-y-4 border-t border-secondary pt-5 sm:grid-cols-4">
+      <% %i[cash card_debt planned reserved].each do |key| %>
+        <div>
+          <dt class="text-xs text-secondary"><%= t("pages.dashboard.cash_plan.available.#{key}") %></dt>
+          <dd class="mt-1 text-sm font-medium tabular-nums privacy-sensitive <%= key == :cash ? "text-primary" : "text-secondary" %>">
+            <%= available.fetch(key).format(precision: 0) %>
+          </dd>
+        </div>
+      <% end %>
+    </dl>
+  </div>
+
+<% when "paycheck" %>
+  <div class="flex min-h-44 flex-col px-4 pb-2">
+    <% if paycheck %>
+      <p class="text-sm text-secondary"><%= paycheck.fetch(:name) %></p>
+      <div class="mt-5">
+        <p class="text-3xl font-medium tabular-nums privacy-sensitive"><%= paycheck.fetch(:amount).format(precision: 0) %></p>
+        <p class="mt-1 text-sm text-secondary"><%= l(paycheck.fetch(:next_date), format: :long) %></p>
+      </div>
+      <div class="mt-auto flex items-center justify-between border-t border-secondary pt-5">
+        <span class="text-sm text-secondary"><%= t("pages.dashboard.cash_plan.paycheck.days_remaining") %></span>
+        <span class="text-lg font-medium tabular-nums"><%= paycheck.fetch(:days_remaining) %></span>
+      </div>
+      <% if paycheck.fetch(:estimated) %>
+        <p class="mt-3 flex items-center gap-1.5 text-xs text-secondary">
+          <%= icon("sparkles", size: "xs") %>
+          <%= t("pages.dashboard.cash_plan.paycheck.estimated") %>
+        </p>
+      <% end %>
+    <% else %>
+      <div class="my-auto py-8 text-center">
+        <p class="text-sm font-medium"><%= t("pages.dashboard.cash_plan.paycheck.empty_title") %></p>
+        <p class="mt-1 text-xs text-secondary"><%= t("pages.dashboard.cash_plan.paycheck.empty_description") %></p>
+      </div>
+    <% end %>
+  </div>
+
+<% when "budget" %>
+  <div class="flex min-h-44 flex-col px-4 pb-2">
+    <p class="text-sm text-secondary"><%= t("pages.dashboard.cash_plan.budget.description") %></p>
+    <div class="mt-5">
+      <p class="text-3xl font-medium tabular-nums privacy-sensitive"><%= budget.fetch(:total).format(precision: 0) %></p>
+      <p class="mt-1 text-sm text-secondary"><%= t("pages.dashboard.cash_plan.budget.total_label") %></p>
+    </div>
+    <div class="mt-auto rounded-lg bg-surface-inset p-4">
+      <p class="text-xs text-secondary"><%= t("pages.dashboard.cash_plan.budget.daily_label") %></p>
+      <div class="mt-1 flex items-baseline justify-between gap-3">
+        <span class="text-2xl font-medium tabular-nums privacy-sensitive"><%= budget.fetch(:daily).format(precision: 0) %></span>
+        <span class="text-xs text-secondary"><%= t("pages.dashboard.cash_plan.budget.for_days", count: budget.fetch(:days_remaining)) %></span>
+      </div>
+    </div>
+  </div>
+
+<% when "spending" %>
+  <div class="flex min-h-48 flex-col px-4 pb-2">
+    <p class="text-sm text-secondary"><%= t("pages.dashboard.cash_plan.spending.since", date: l(spending.fetch(:period_start), format: :long)) %></p>
+    <div class="mt-5 flex items-end justify-between gap-4">
+      <div>
+        <p class="text-3xl font-medium tabular-nums privacy-sensitive"><%= spending.fetch(:total).format(precision: 0) %></p>
+        <p class="mt-1 text-xs text-secondary"><%= t("pages.dashboard.cash_plan.spending.days", count: spending.fetch(:days_elapsed)) %></p>
+      </div>
+      <% if spending.fetch(:change_percent) %>
+        <% improved = spending.fetch(:change_percent).negative? %>
+        <%= render DS::Pill.new(
+          label: t("pages.dashboard.cash_plan.spending.change", percent: spending.fetch(:change_percent).abs),
+          tone: improved ? :success : :warning,
+          icon: improved ? "trending-down" : "trending-up",
+          marker: false
+        ) %>
+      <% end %>
+    </div>
+    <div class="mt-auto border-t border-secondary pt-5">
+      <div class="flex items-center justify-between text-sm">
+        <span class="text-secondary"><%= t("pages.dashboard.cash_plan.spending.previous_period") %></span>
+        <span class="font-medium tabular-nums privacy-sensitive"><%= spending.fetch(:previous_total).format(precision: 0) %></span>
+      </div>
+    </div>
+  </div>
+
+<% when "credit_card" %>
+  <div class="flex min-h-48 flex-col px-4 pb-2">
+    <% if card.fetch(:account) %>
+      <p class="text-sm text-secondary"><%= card.fetch(:account).name %></p>
+      <dl class="mt-5 grid grid-cols-2 gap-5">
+        <div>
+          <dt class="text-xs text-secondary"><%= t("pages.dashboard.cash_plan.credit_card.current") %></dt>
+          <dd class="mt-1 text-2xl font-medium tabular-nums privacy-sensitive"><%= card.fetch(:current_balance).format(precision: 0) %></dd>
+        </div>
+        <div>
+          <dt class="text-xs text-secondary"><%= t("pages.dashboard.cash_plan.credit_card.statement") %></dt>
+          <dd class="mt-1 text-lg font-medium tabular-nums privacy-sensitive"><%= card.fetch(:statement_balance)&.format(precision: 0) || t("pages.dashboard.cash_plan.not_available") %></dd>
+        </div>
+        <div>
+          <dt class="text-xs text-secondary"><%= t("pages.dashboard.cash_plan.credit_card.due") %></dt>
+          <dd class="mt-1 text-sm font-medium"><%= card.fetch(:due_date) ? l(card.fetch(:due_date), format: :long) : t("pages.dashboard.cash_plan.not_available") %></dd>
+        </div>
+        <div>
+          <dt class="text-xs text-secondary"><%= t("pages.dashboard.cash_plan.credit_card.repayable") %></dt>
+          <dd class="mt-1 text-sm font-medium tabular-nums privacy-sensitive"><%= card.fetch(:available_to_repay).format(precision: 0) %></dd>
+        </div>
+      </dl>
+    <% else %>
+      <div class="my-auto py-8 text-center">
+        <p class="text-sm font-medium"><%= t("pages.dashboard.cash_plan.credit_card.empty_title") %></p>
+        <p class="mt-1 text-xs text-secondary"><%= t("pages.dashboard.cash_plan.credit_card.empty_description") %></p>
+      </div>
+    <% end %>
+  </div>
+
+<% when "allocation" %>
+  <div class="flex min-h-48 flex-col px-4 pb-2">
+    <p class="text-sm text-secondary"><%= t("pages.dashboard.cash_plan.allocation.description") %></p>
+    <div class="mt-5 flex h-2 overflow-hidden rounded-full bg-container-inset" aria-hidden="true">
+      <% cash_plan.fetch(:allocation).fetch(:items).each do |item| %>
+        <% color_class = { card: "bg-destructive", savings: "bg-success", fixed: "bg-warning", free: "bg-inverse" }.fetch(item.fetch(:key)) %>
+        <span class="<%= color_class %>" style="width: <%= item.fetch(:percent) %>%"></span>
+      <% end %>
+    </div>
+    <dl class="mt-5 space-y-3">
+      <% cash_plan.fetch(:allocation).fetch(:items).each do |item| %>
+        <div class="flex items-center justify-between gap-3 text-sm">
+          <dt class="flex items-center gap-2 text-secondary">
+            <% dot_class = { card: "bg-destructive", savings: "bg-success", fixed: "bg-warning", free: "bg-inverse" }.fetch(item.fetch(:key)) %>
+            <span class="h-2 w-2 rounded-full <%= dot_class %>"></span>
+            <%= t("pages.dashboard.cash_plan.allocation.#{item.fetch(:key)}") %>
+          </dt>
+          <dd class="font-medium tabular-nums privacy-sensitive"><%= item.fetch(:amount).format(precision: 0) %></dd>
+        </div>
+      <% end %>
+    </dl>
+  </div>
+
+<% when "goals" %>
+  <div class="flex min-h-52 flex-col px-4 pb-2">
+    <div class="flex items-center justify-between gap-4">
+      <p class="text-sm text-secondary"><%= t("pages.dashboard.cash_plan.goals.description") %></p>
+      <%= link_to t("pages.dashboard.cash_plan.goals.view_plan"), plan_path, class: "shrink-0 text-xs text-link underline underline-offset-2 hover:no-underline focus-ring" %>
+    </div>
+    <% if cash_plan.fetch(:goals).any? %>
+      <div class="mt-5 space-y-5">
+        <% cash_plan.fetch(:goals).each do |goal| %>
+          <div>
+            <div class="flex items-center justify-between gap-4">
+              <div class="flex min-w-0 items-center gap-2.5">
+                <%= render Goals::AvatarComponent.new(goal: goal, size: "sm") %>
+                <span class="truncate text-sm font-medium"><%= goal.name %></span>
+              </div>
+              <span class="shrink-0 text-sm tabular-nums privacy-sensitive"><%= goal.current_balance_money.format(precision: 0) %> / <%= goal.target_amount_money.format(precision: 0) %></span>
+            </div>
+            <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-container-inset">
+              <div class="h-full rounded-full bg-success" style="width: <%= goal.progress_percent %>%"></div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="my-auto py-8 text-center">
+        <p class="text-sm font-medium"><%= t("pages.dashboard.cash_plan.goals.empty_title") %></p>
+        <p class="mt-1 text-xs text-secondary"><%= t("pages.dashboard.cash_plan.goals.empty_description") %></p>
+      </div>
+    <% end %>
+  </div>
+
+<% when "purchases" %>
+  <div class="flex min-h-48 flex-col px-4 pb-2">
+    <p class="text-sm text-secondary"><%= t("pages.dashboard.cash_plan.purchases.description") %></p>
+    <% if cash_plan.fetch(:purchases).any? %>
+      <div class="mt-5 divide-y divide-secondary">
+        <% cash_plan.fetch(:purchases).each do |purchase| %>
+          <div class="grid grid-cols-2 gap-3 py-3 first:pt-0 sm:grid-cols-4">
+            <div class="col-span-2 min-w-0 sm:col-span-1">
+              <p class="truncate text-sm font-medium"><%= purchase.fetch(:goal).name %></p>
+              <p class="mt-0.5 text-xs text-secondary"><%= l(purchase.fetch(:goal).target_date, format: :long) %></p>
+            </div>
+            <div>
+              <p class="text-xs text-secondary"><%= t("pages.dashboard.cash_plan.purchases.price") %></p>
+              <p class="mt-0.5 text-sm font-medium tabular-nums privacy-sensitive"><%= purchase.fetch(:price).format(precision: 0) %></p>
+            </div>
+            <div>
+              <p class="text-xs text-secondary"><%= t("pages.dashboard.cash_plan.purchases.saved") %></p>
+              <p class="mt-0.5 text-sm font-medium tabular-nums privacy-sensitive"><%= purchase.fetch(:saved).format(precision: 0) %></p>
+            </div>
+            <div>
+              <p class="text-xs text-secondary"><%= t("pages.dashboard.cash_plan.purchases.impact") %></p>
+              <p class="mt-0.5 text-sm font-medium tabular-nums privacy-sensitive <%= purchase.fetch(:impact).negative? ? "text-destructive" : "text-success" %>"><%= purchase.fetch(:impact).format(precision: 0) %></p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="my-auto py-8 text-center">
+        <p class="text-sm font-medium"><%= t("pages.dashboard.cash_plan.purchases.empty_title") %></p>
+        <p class="mt-1 text-xs text-secondary"><%= t("pages.dashboard.cash_plan.purchases.empty_description") %></p>
+      </div>
+    <% end %>
+  </div>
+
+<% when "categories" %>
+  <div class="flex min-h-48 flex-col px-4 pb-2">
+    <p class="text-sm text-secondary"><%= t("pages.dashboard.cash_plan.categories.description") %></p>
+    <% if cash_plan.fetch(:categories).any? %>
+      <div class="mt-5 space-y-4">
+        <% cash_plan.fetch(:categories).each do |category| %>
+          <div>
+            <div class="flex items-center justify-between gap-4">
+              <div class="flex min-w-0 items-center gap-2">
+                <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: <%= category.fetch(:color) %>"></span>
+                <span class="truncate text-sm"><%= category.fetch(:name) %></span>
+              </div>
+              <span class="shrink-0 text-sm font-medium tabular-nums privacy-sensitive"><%= category.fetch(:amount).format(precision: 0) %></span>
+            </div>
+            <div class="mt-2 h-1 overflow-hidden rounded-full bg-container-inset">
+              <div class="h-full rounded-full bg-inverse" style="width: <%= category.fetch(:percent) %>%"></div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="my-auto py-8 text-center">
+        <p class="text-sm font-medium"><%= t("pages.dashboard.cash_plan.categories.empty_title") %></p>
+        <p class="mt-1 text-xs text-secondary"><%= t("pages.dashboard.cash_plan.categories.empty_description") %></p>
+      </div>
+    <% end %>
+  </div>
+
+<% when "review" %>
+  <div class="flex min-h-48 flex-col px-4 pb-2">
+    <div class="flex items-start justify-between gap-4">
+      <p class="text-sm text-secondary"><%= t("pages.dashboard.cash_plan.review.description") %></p>
+      <%= render DS::Pill.new(
+        label: review.fetch(:total).to_s,
+        tone: review.fetch(:total).positive? ? :warning : :success,
+        marker: false,
+        show_dot: false
+      ) %>
+    </div>
+    <dl class="mt-5 space-y-3">
+      <% %i[uncategorized duplicates missing_refunds].each do |key| %>
+        <div class="flex items-center justify-between gap-4 rounded-lg bg-surface-inset px-4 py-3">
+          <dt class="text-sm"><%= t("pages.dashboard.cash_plan.review.#{key}") %></dt>
+          <dd class="text-sm font-medium tabular-nums"><%= review.fetch(key) %></dd>
+        </div>
+      <% end %>
+    </dl>
+    <%= link_to t("pages.dashboard.cash_plan.review.open_transactions"), transactions_path, class: "mt-auto self-start pt-5 text-sm text-link underline underline-offset-2 hover:no-underline focus-ring" %>
+  </div>
+<% end %>

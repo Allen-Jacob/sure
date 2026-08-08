@@ -139,6 +139,27 @@ fr:
         additional_currencies_label: Devises supplémentaires
         base_currency_badge: Devise de base
         base_currency_label: Devise de base
+        cash_plan:
+          automatic: Détection automatique
+          cash_accounts: Comptes d’argent à inclure
+          credit_cards: Cartes de crédit à inclure
+          expected_pay_amount: Montant attendu (%{currency})
+          manual_schedule: Prochaine paie manuelle (facultatif)
+          manual_schedule_hint: Saisissez les deux champs pour remplacer l’estimation automatique. Laissez-les vides pour utiliser vos transactions réelles.
+          next_pay_date: Date de la prochaine paie
+          no_cash_accounts: Aucun compte courant ou d’épargne accessible dans la devise de base.
+          no_credit_cards: Aucune carte de crédit accessible dans la devise de base.
+          pay_cycle_days: Fréquence de la paie
+          pay_cycle_days_option:
+            one: Tous les jours
+            other: Tous les %{count} jours
+          payroll_categories: Catégories de revenu de paie
+          payroll_categories_hint: Sélectionnez vos catégories réelles. Sans sélection, Sure reconnaît automatiquement les libellés courants de paie.
+          portability_note: Ces choix utilisent les identifiants de votre instance. Si un compte ou une catégorie n’existe plus après un export, les widgets reviennent automatiquement aux données accessibles compatibles.
+          primary_credit_card: Carte principale du widget
+          save: Enregistrer le plan de trésorerie
+          subtitle: Choisissez les données utilisées par les nouveaux widgets sans dépendre du nom de vos comptes ou catégories.
+          title: Plan de trésorerie du tableau de bord
         country: Pays
         currencies_more: "+%{count} de plus"
         currencies_subtitle: Choisissez les devises qui apparaissent dans les champs monétaires de votre %{moniker}
@@ -176,6 +197,9 @@ fr:
         sharing_title: Partage de %{moniker}
         timezone: Fuseau horaire
         translations_notice: Veuillez noter que nous travaillons toujours sur des traductions dans différentes langues.
+      update:
+        cash_plan_invalid_schedule: Indiquez une date et un montant de paie valides, ou laissez les deux champs vides.
+        cash_plan_saved: Les réglages du plan de trésorerie ont été enregistrés.
     profiles:
       destroy:
         cannot_remove_self: Vous ne pouvez pas vous enlever de votre compte.
