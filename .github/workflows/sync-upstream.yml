@@ -1,0 +1,93 @@
+name: Sync Sure Upstream
+
+on:
+  schedule:
+    - cron: "0 12 * * *"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+
+  sync:
+    name: Sync upstream main
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout fork
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.AUTOMATION_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "sure-upstream-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add Sure upstream
+        run: |
+          git remote add upstream https://github.com/we-promise/sure.git || true
+          git fetch upstream main
+
+      - name: Sync main
+        run: |
+          git checkout main
+          git merge --ff-only upstream/main
+          git push origin main
+
+
+  create-pr:
+    name: Create update PR
+    needs: sync
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.AUTOMATION_TOKEN }}
+
+      - name: Check difference
+        id: diff
+        run: |
+          git fetch origin main custom-dashboard
+
+          if git diff --quiet origin/custom-dashboard..origin/main; then
+            echo "changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create or find PR
+        if: steps.diff.outputs.changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMATION_TOKEN }}
+        run: |
+          EXISTING_PR=$(gh pr list \
+            --base custom-dashboard \
+            --head main \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+
+          if [ -z "$EXISTING_PR" ]; then
+
+            PR_URL=$(gh pr create \
+              --base custom-dashboard \
+              --head main \
+              --title "Sync latest Sure upstream changes" \
+              --body "Automatic synchronization of the latest upstream Sure changes into custom-dashboard.")
+
+            echo "Created: $PR_URL"
+
+          else
+            echo "PR #$EXISTING_PR already exists."
+          fi
