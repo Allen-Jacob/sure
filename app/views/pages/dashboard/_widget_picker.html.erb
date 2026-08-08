@@ -1,0 +1,49 @@
+<%= render DS::Popover.new(
+      variant: :button,
+      no_padding: true,
+      mobile_fullwidth: true,
+      max_width: "360px",
+      testid: "dashboard-widget-picker"
+    ) do |popover| %>
+  <% popover.with_button(
+       type: "button",
+       text: t("pages.dashboard.cash_plan.customize.button"),
+       variant: "outline",
+       icon: "sliders-horizontal"
+     ) %>
+
+  <% popover.with_custom_content do %>
+    <div class="w-80 max-w-full p-4" data-testid="dashboard-widget-options">
+      <div class="mb-4">
+        <p class="text-sm font-medium text-primary"><%= t("pages.dashboard.cash_plan.customize.title") %></p>
+        <p class="mt-1 text-xs text-secondary"><%= t("pages.dashboard.cash_plan.customize.description") %></p>
+      </div>
+
+      <% sections.select { |section| section[:visible] }.group_by { |section| section.fetch(:group, :analysis) }.each do |group, grouped_sections| %>
+        <fieldset class="mt-4 first:mt-0">
+          <legend class="mb-1.5 text-xs font-medium uppercase tracking-wide text-secondary">
+            <%= t("pages.dashboard.cash_plan.customize.groups.#{group}") %>
+          </legend>
+          <div class="divide-y divide-secondary">
+            <% grouped_sections.each do |section| %>
+              <div class="flex items-center justify-between gap-4 py-2.5">
+                <span class="min-w-0 truncate text-sm text-primary"><%= t(section[:title]) %></span>
+                <%= render DS::Toggle.new(
+                      id: "dashboard_widget_#{section[:key]}",
+                      name: "dashboard_widget_#{section[:key]}",
+                      checked: !Current.user.dashboard_section_hidden?(section[:key]),
+                      aria: { label: t(section[:title]) },
+                      data: {
+                        dashboard_customizer_target: "toggle",
+                        section_key: section[:key],
+                        action: "change->dashboard-customizer#toggle"
+                      }
+                    ) %>
+              </div>
+            <% end %>
+          </div>
+        </fieldset>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>
