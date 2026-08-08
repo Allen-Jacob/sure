@@ -71,14 +71,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.AUTOMATION_TOKEN }}
         run: |
-          EXISTING_PR=$(gh pr list \
+
+          PR_NUMBER=$(gh pr list \
             --base custom-dashboard \
             --head main \
             --state open \
             --json number \
             --jq '.[0].number')
 
-          if [ -z "$EXISTING_PR" ]; then
+          if [ -z "$PR_NUMBER" ]; then
 
             PR_URL=$(gh pr create \
               --base custom-dashboard \
@@ -86,8 +87,16 @@ jobs:
               --title "Sync latest Sure upstream changes" \
               --body "Automatic synchronization of the latest upstream Sure changes into custom-dashboard.")
 
-            echo "Created: $PR_URL"
+            PR_NUMBER=$(gh pr view "$PR_URL" --json number --jq '.number')
+
+            echo "Created PR #$PR_NUMBER"
 
           else
-            echo "PR #$EXISTING_PR already exists."
+
+            echo "Using existing PR #$PR_NUMBER"
+
           fi
+
+          gh pr merge "$PR_NUMBER" \
+            --auto \
+            --merge
