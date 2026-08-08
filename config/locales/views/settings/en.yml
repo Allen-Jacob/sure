@@ -169,6 +169,27 @@ en:
         date_format: Date format
         general_subtitle: Configure your preferences
         general_title: General
+        cash_plan:
+          automatic: Automatic detection
+          cash_accounts: Cash accounts to include
+          credit_cards: Credit cards to include
+          expected_pay_amount: Expected amount (%{currency})
+          manual_schedule: Manual next paycheck (optional)
+          manual_schedule_hint: Enter both fields to override the automatic estimate. Leave both empty to use your real transactions.
+          next_pay_date: Next paycheck date
+          no_cash_accounts: No accessible checking or savings account uses the base currency.
+          no_credit_cards: No accessible credit card uses the base currency.
+          pay_cycle_days: Pay frequency
+          pay_cycle_days_option:
+            one: Every day
+            other: Every %{count} days
+          payroll_categories: Payroll income categories
+          payroll_categories_hint: Select the categories used by your instance. With no selection, Sure automatically recognizes common payroll labels.
+          portability_note: These choices use IDs from your instance. If an account or category no longer exists after an export, the widgets automatically fall back to compatible accessible data.
+          primary_credit_card: Main card for the widget
+          save: Save cash plan
+          subtitle: Choose the data used by the new widgets without depending on your account or category names.
+          title: Dashboard cash plan
         default_period: Default Period
         default_account_order: Default Account Order
         language: Language
@@ -204,6 +225,9 @@ en:
         preview:
           title: Enable preview features
           description: Opt in to in-progress features tagged preview or canary.
+      update:
+        cash_plan_invalid_schedule: Enter a valid paycheck date and amount, or leave both fields empty.
+        cash_plan_saved: Cash plan settings were saved.
     profiles:
       destroy:
         cannot_remove_self: You cannot remove yourself from the account.
