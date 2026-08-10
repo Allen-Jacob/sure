@@ -28,6 +28,11 @@
       <% end %>
     </header>
 
+    <%= render DS::SegmentedControl.new(aria_label: t("reports.navigation.aria_label")) do |sc| %>
+      <% sc.with_segment(t("reports.navigation.overview"), active: true, href: reports_path) %>
+      <% sc.with_segment(t("reports.navigation.comparison"), active: false, href: comparison_reports_path) %>
+    <% end %>
+
     <%# Period Navigation Tabs %>
     <div class="flex items-center justify-between gap-4">
       <%= render DS::SegmentedControl.new(aria_label: t("reports.index.period_aria", default: "Report period"), class: "overflow-x-auto no-scrollbar") do |sc| %>

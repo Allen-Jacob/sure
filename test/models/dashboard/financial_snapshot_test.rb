@@ -86,12 +86,10 @@ class Dashboard::FinancialSnapshotTest < ActiveSupport::TestCase
     assert_equal 7, snapshot.dig(:budget, :days_remaining)
     assert_equal 3400.to_d / 7, snapshot.dig(:budget, :daily).amount
 
-    allocation = snapshot.dig(:allocation, :items).index_by { |item| item.fetch(:key) }
-    assert_equal 100.to_d, allocation.dig(:fixed, :amount).amount
-    assert_equal 1000.to_d, allocation.dig(:card, :amount).amount
-    assert_equal 200.to_d, allocation.dig(:savings, :amount).amount
-    assert_equal 700.to_d, allocation.dig(:free, :amount).amount
-    assert_equal 2000.to_d, allocation.values.sum { |item| item.fetch(:amount).amount }
+    allocation = snapshot.dig(:allocation, :items)
+    assert_equal [ "Everyday Checking" ], allocation.map { |item| item.fetch(:account_name) }
+    assert_equal [ 100.to_d ], allocation.map { |item| item.fetch(:percent) }
+    assert_equal 2000.to_d, allocation.sum { |item| item.fetch(:amount).amount }
 
     assert_equal "New car", snapshot.dig(:goals, 0).name
     assert_equal 1, snapshot.fetch(:purchases).size
@@ -110,7 +108,39 @@ class Dashboard::FinancialSnapshotTest < ActiveSupport::TestCase
     ).to_h
 
     assert_equal 0.to_d, snapshot.dig(:available, :card_debt).amount
-    assert_equal 0.to_d, snapshot.dig(:allocation, :items, 0, :amount).amount
+  end
+
+  test "uses the configured paycheck percentages for each cash account" do
+    savings = @family.accounts.create!(
+      owner: @user,
+      name: "Rainy Day Savings",
+      balance: 500,
+      currency: "USD",
+      accountable: Depository.new
+    )
+    @user.update_dashboard_cash_plan_settings({
+      "next_pay_date" => (@today + 4).iso8601,
+      "expected_pay_amount" => "2000",
+      "depository_account_ids" => [ @checking.id.to_s, savings.id.to_s ],
+      "paycheck_allocations" => {
+        @checking.id.to_s => "30",
+        savings.id.to_s => "70"
+      }
+    })
+
+    snapshot = Dashboard::FinancialSnapshot.new(
+      family: @family,
+      user: @user,
+      accounts: @user.accessible_accounts.visible,
+      today: @today
+    ).to_h
+
+    items = snapshot.dig(:allocation, :items).index_by { |item| item.fetch(:account_name) }
+    assert snapshot.dig(:allocation, :configured)
+    assert_equal 30.to_d, items.dig("Everyday Checking", :percent)
+    assert_equal 600.to_d, items.dig("Everyday Checking", :amount).amount
+    assert_equal 70.to_d, items.dig("Rainy Day Savings", :percent)
+    assert_equal 1400.to_d, items.dig("Rainy Day Savings", :amount).amount
   end
 
   test "uses configured accounts and a category whose name is instance-specific" do

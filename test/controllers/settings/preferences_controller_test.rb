@@ -12,6 +12,7 @@ class Settings::PreferencesControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Dashboard cash plan"
     assert_select "form input[name='dashboard_cash_plan[depository_account_ids][]']", minimum: 1
     assert_select "form input[name='dashboard_cash_plan[payroll_category_ids][]']", minimum: 1
+    assert_select "form input[name^='dashboard_cash_plan[paycheck_allocations]']", minimum: 1
   end
 
   test "group moniker uses group currencies copy and hides legacy currency field" do
@@ -83,7 +84,56 @@ class Settings::PreferencesControllerTest < ActionDispatch::IntegrationTest
     assert_equal 15, settings["pay_cycle_days"]
     assert_equal "2026-08-15", settings["next_pay_date"]
     assert_equal "2450.75", settings["expected_pay_amount"]
+    assert_equal({ depository.id.to_s => "100.0" }, settings["paycheck_allocations"])
     assert user.preview_features_enabled?
+  end
+
+  test "update saves a paycheck split between selected cash accounts" do
+    user = users(:family_admin)
+    accounts = user.accessible_accounts.visible.where(currency: user.family.primary_currency_code)
+    checking = accounts.find_by!(accountable_type: "Depository")
+    savings = user.family.accounts.create!(
+      owner: user,
+      name: "Savings for allocation",
+      balance: 0,
+      currency: user.family.primary_currency_code,
+      accountable: Depository.new
+    )
+
+    patch settings_preferences_url, params: {
+      dashboard_cash_plan: {
+        depository_account_ids: [ checking.id, savings.id ],
+        pay_cycle_days: 14,
+        paycheck_allocations: {
+          checking.id => "30",
+          savings.id => "70"
+        }
+      }
+    }
+
+    assert_redirected_to settings_preferences_url
+    assert_equal(
+      { checking.id.to_s => "30.0", savings.id.to_s => "70.0" },
+      user.reload.dashboard_cash_plan_settings["paycheck_allocations"]
+    )
+  end
+
+  test "update rejects paycheck allocations that do not total 100 percent" do
+    user = users(:family_admin)
+    original_preferences = user.preferences.deep_dup
+    depository = user.accessible_accounts.visible.find_by!(accountable_type: "Depository")
+
+    patch settings_preferences_url, params: {
+      dashboard_cash_plan: {
+        depository_account_ids: [ depository.id ],
+        pay_cycle_days: 14,
+        paycheck_allocations: { depository.id => "80" }
+      }
+    }
+
+    assert_redirected_to settings_preferences_url
+    assert_equal "Paycheck allocations must be between 0% and 100% and total exactly 100%.", flash[:alert]
+    assert_equal original_preferences, user.reload.preferences
   end
 
   test "update ignores account and category ids from another family" do

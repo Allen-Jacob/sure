@@ -19,6 +19,25 @@ class ReportsControllerTest < ActionDispatch::IntegrationTest
     assert_select "h1", text: I18n.t("reports.index.title")
   end
 
+  test "comparison puts any two selected months side by side" do
+    get comparison_reports_path(primary_month: "2026-08", comparison_month: "2025-08")
+
+    assert_response :ok
+    assert_select "h1", text: I18n.t("reports.comparison.title")
+    assert_select "[data-testid='month-comparison']", count: 1
+    assert_select "[data-testid='comparison-metric-income']", count: 1
+    assert_select "input[name='primary_month'][value='2026-08']", count: 1
+    assert_select "input[name='comparison_month'][value='2025-08']", count: 1
+  end
+
+  test "comparison handles invalid month parameters" do
+    get comparison_reports_path(primary_month: "not-a-month", comparison_month: "also-invalid")
+
+    assert_response :ok
+    assert_select "input[name='primary_month'][value=?]", Date.current.strftime("%Y-%m")
+    assert_select "input[name='comparison_month'][value=?]", Date.current.prev_year.strftime("%Y-%m")
+  end
+
   test "index with quarterly period" do
     get reports_path(period_type: :quarterly)
     assert_response :ok

@@ -1,6 +1,32 @@
 ---
 fr:
   reports:
+    navigation:
+      aria_label: Vue des rapports
+      overview: Vue d’ensemble
+      comparison: Comparaison
+    comparison:
+      title: Comparer des mois
+      subtitle: Place deux mois côte à côte pour comprendre l’évolution de tes revenus, dépenses et économies.
+      primary_month: Mois à analyser
+      comparison_month: Comparer avec
+      compare: Comparer
+      partial_period: Comme l’un des mois est en cours, les deux mois sont comparés jusqu’au jour %{day}.
+      income_categories: Comparaison des revenus
+      income_categories_description: Compare ton salaire et toutes tes autres catégories de revenus.
+      expense_categories: Comparaison des dépenses
+      expense_categories_description: Repère précisément les catégories de dépenses qui ont augmenté ou diminué.
+      category: Catégorie
+      difference: Différence
+      change: Variation
+      no_category_data: Aucune activité catégorisée n’a été trouvée pour ces mois.
+      not_available: "—"
+      points: "%{value} pts"
+      metrics:
+        income: Revenus totaux
+        expenses: Dépenses totales
+        net_savings: Épargne nette
+        savings_rate: Taux d’épargne
     budget_performance:
       budgeted: Budgété
       no_budgets: Aucune catégorie de budget définie pour ce mois

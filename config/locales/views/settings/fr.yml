@@ -155,6 +155,9 @@ fr:
             other: Tous les %{count} jours
           payroll_categories: Catégories de revenu de paie
           payroll_categories_hint: Sélectionnez vos catégories réelles. Sans sélection, Sure reconnaît automatiquement les libellés courants de paie.
+          paycheck_allocation: Répartition de la prochaine paie
+          paycheck_allocation_hint: Choisissez le pourcentage versé dans chaque compte d’argent sélectionné. Le total doit être égal à 100 %.
+          allocation_total: Répartition totale
           portability_note: Ces choix utilisent les identifiants de votre instance. Si un compte ou une catégorie n’existe plus après un export, les widgets reviennent automatiquement aux données accessibles compatibles.
           primary_credit_card: Carte principale du widget
           save: Enregistrer le plan de trésorerie
@@ -198,6 +201,7 @@ fr:
         timezone: Fuseau horaire
         translations_notice: Veuillez noter que nous travaillons toujours sur des traductions dans différentes langues.
       update:
+        cash_plan_invalid_allocation: Les répartitions doivent être comprises entre 0 % et 100 % et totaliser exactement 100 %.
         cash_plan_invalid_schedule: Indiquez une date et un montant de paie valides, ou laissez les deux champs vides.
         cash_plan_saved: Les réglages du plan de trésorerie ont été enregistrés.
     profiles:

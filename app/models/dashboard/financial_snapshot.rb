@@ -42,7 +42,7 @@ module Dashboard
           credit_card: card,
           budget: budget_snapshot(available:, period_end:),
           goals: goals.first(3),
-          allocation: allocation_snapshot(pay:, planned:, goals:),
+          allocation: allocation_snapshot(pay:),
           purchases: purchase_snapshots(goals:, available:),
           categories: category_snapshot(spending.fetch(:entries)),
           review: review_snapshot,
@@ -321,28 +321,52 @@ module Dashboard
         @prepared_goals ||= Goal.active_prepared_for(@family).select { |goal| goal.currency == @currency }
       end
 
-      def allocation_snapshot(pay:, planned:, goals:)
+      def allocation_snapshot(pay:)
         pay_amount = pay&.fetch(:amount)&.amount.to_d
-        fixed = [ planned.fetch(:total).amount, pay_amount ].min
-        after_fixed = [ pay_amount - fixed, 0.to_d ].max
-        card_debt = credit_card_accounts.sum { |account| [ account.balance.to_d, 0.to_d ].max }
-        card = [ card_debt, after_fixed ].min
-        after_card = [ after_fixed - card, 0.to_d ].max
-        goal_gap = goals.sum(&:remaining_amount)
-        savings = [ pay_amount * 0.10.to_d, goal_gap, after_card ].min
-        free = [ after_card - savings, 0.to_d ].max
+        percentages, configured = paycheck_allocation_percentages
+        allocated_amount = 0.to_d
 
-        amounts = { card: card, savings: savings, fixed: fixed, free: free }
         {
           total: money(pay_amount),
-          items: amounts.map do |key, amount|
+          configured: configured,
+          items: percentages.each_with_index.map do |(account, percent), index|
+            amount = if index == percentages.length - 1
+              pay_amount - allocated_amount
+            else
+              pay_amount * percent / 100
+            end
+            allocated_amount += amount
+
             {
-              key: key,
+              account: account,
+              account_name: account.name,
               amount: money(amount),
-              percent: pay_amount.positive? ? ((amount / pay_amount) * 100).round : 0
+              percent: percent
             }
           end
         }
+      end
+
+      def paycheck_allocation_percentages
+        configured = @settings["paycheck_allocations"]
+        if configured.is_a?(Hash)
+          percentages = depository_accounts.filter_map do |account|
+            percent = configured[account.id.to_s].to_d
+            [ account, percent ] if percent.positive?
+          end
+          return [ percentages, true ] if percentages.any? && percentages.sum(&:last) == 100.to_d
+        end
+
+        return [ [], false ] if depository_accounts.empty?
+
+        base = (100.to_d / depository_accounts.size).round(1, :down)
+        remaining = 100.to_d
+        percentages = depository_accounts.each_with_index.map do |account, index|
+          percent = index == depository_accounts.length - 1 ? remaining : base
+          remaining -= percent
+          [ account, percent ]
+        end
+        [ percentages, false ]
       end
 
       def purchase_snapshots(goals:, available:)
