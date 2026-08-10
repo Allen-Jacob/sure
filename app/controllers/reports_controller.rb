@@ -15,6 +15,22 @@ class ReportsController < ApplicationController
     @breadcrumbs = [ [ t("breadcrumbs.home"), root_path ], [ t("breadcrumbs.reports"), nil ] ]
   end
 
+  def comparison
+    @primary_month = parse_month_param(:primary_month) || Date.current.beginning_of_month
+    @comparison_month = parse_month_param(:comparison_month) || @primary_month.prev_year
+    @month_comparison = Reports::MonthComparison.new(
+      income_statement: Current.family.income_statement(user: Current.user),
+      primary_month: @primary_month,
+      comparison_month: @comparison_month,
+      currency: Current.family.currency
+    )
+    @breadcrumbs = [
+      [ t("breadcrumbs.home"), root_path ],
+      [ t("breadcrumbs.reports"), reports_path ],
+      [ t("reports.comparison.title"), nil ]
+    ]
+  end
+
   def print
     setup_report_data(show_flash: false)
 
@@ -233,6 +249,15 @@ class ReportsController < ApplicationController
       return nil if date_string.blank?
 
       Date.parse(date_string)
+    rescue Date::Error
+      nil
+    end
+
+    def parse_month_param(param_name)
+      value = params[param_name].to_s
+      return if value.blank?
+
+      Date.strptime(value, "%Y-%m").beginning_of_month
     rescue Date::Error
       nil
     end

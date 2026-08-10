@@ -2,6 +2,7 @@ class Settings::PreferencesController < ApplicationController
   layout "settings"
 
   PAY_CYCLE_DAYS = [ 7, 14, 15, 28, 30, 31 ].freeze
+  class InvalidPaycheckAllocation < ArgumentError; end
 
   def show
     @user = Current.user
@@ -37,6 +38,8 @@ class Settings::PreferencesController < ApplicationController
     def update_cash_plan_preferences
       @user.update_dashboard_cash_plan_settings(normalized_cash_plan_settings)
       redirect_to settings_preferences_path, notice: t(".cash_plan_saved")
+    rescue InvalidPaycheckAllocation
+      redirect_to settings_preferences_path, alert: t(".cash_plan_invalid_allocation")
     rescue ArgumentError
       redirect_to settings_preferences_path, alert: t(".cash_plan_invalid_schedule")
     end
@@ -49,7 +52,8 @@ class Settings::PreferencesController < ApplicationController
         :pay_cycle_days,
         depository_account_ids: [],
         credit_card_account_ids: [],
-        payroll_category_ids: []
+        payroll_category_ids: [],
+        paycheck_allocations: {}
       )
 
       accounts = cash_plan_accounts
@@ -76,8 +80,43 @@ class Settings::PreferencesController < ApplicationController
 
       pay_cycle_days = submitted[:pay_cycle_days].to_i
       settings["pay_cycle_days"] = pay_cycle_days if pay_cycle_days.in?(PAY_CYCLE_DAYS)
+      add_paycheck_allocations!(settings, submitted, accounts:, depository_ids:)
       add_manual_pay_schedule!(settings, submitted)
       settings
+    end
+
+    def add_paycheck_allocations!(settings, submitted, accounts:, depository_ids:)
+      allowed_accounts = accounts.select { |account| account.accountable_type == "Depository" }
+      return if allowed_accounts.empty?
+
+      effective_ids = depository_ids.presence || allowed_accounts.map { |account| account.id.to_s }
+      unless submitted.key?(:paycheck_allocations)
+        base = (100.to_d / effective_ids.size).round(1, :down)
+        remaining = 100.to_d
+        settings["paycheck_allocations"] = effective_ids.each_with_index.to_h do |account_id, index|
+          percentage = index == effective_ids.length - 1 ? remaining : base
+          remaining -= percentage
+          [ account_id, percentage.to_s("F") ]
+        end
+        return
+      end
+
+      raw_allocations = submitted[:paycheck_allocations]&.to_h || {}
+      allocations = effective_ids.to_h do |account_id|
+        raw_value = raw_allocations[account_id].to_s.strip
+        percentage = raw_value.present? ? BigDecimal(raw_value.tr(",", ".")) : 0.to_d
+        raise InvalidPaycheckAllocation unless percentage.between?(0, 100)
+
+        [ account_id, percentage ]
+      rescue ArgumentError
+        raise InvalidPaycheckAllocation
+      end
+
+      positive_allocations = allocations.select { |_account_id, percentage| percentage.positive? }
+      total = positive_allocations.values.sum(0.to_d)
+      raise InvalidPaycheckAllocation unless total == 100.to_d
+
+      settings["paycheck_allocations"] = positive_allocations.transform_values { |percentage| percentage.to_s("F") }
     end
 
     def add_manual_pay_schedule!(settings, submitted)
@@ -110,6 +149,7 @@ class Settings::PreferencesController < ApplicationController
       @selected_cash_plan_depository_ids = selected_account_ids("depository_account_ids", @cash_plan_depository_accounts)
       @selected_cash_plan_credit_card_ids = selected_account_ids("credit_card_account_ids", @cash_plan_credit_card_accounts)
       @selected_payroll_category_ids = valid_setting_ids("payroll_category_ids", @cash_plan_categories)
+      @cash_plan_paycheck_allocations = paycheck_allocation_values
     end
 
     def cash_plan_accounts
@@ -129,5 +169,25 @@ class Settings::PreferencesController < ApplicationController
     def valid_setting_ids(key, records)
       configured = Array(@cash_plan_settings[key]).map(&:to_s)
       configured & records.map { |record| record.id.to_s }
+    end
+
+    def paycheck_allocation_values
+      configured = @cash_plan_settings["paycheck_allocations"]
+      if configured.is_a?(Hash) && configured.values.sum { |value| value.to_d } == 100.to_d
+        return configured.transform_keys(&:to_s)
+      end
+
+      selected_accounts = @cash_plan_depository_accounts.select do |account|
+        account.id.to_s.in?(@selected_cash_plan_depository_ids)
+      end
+      return {} if selected_accounts.empty?
+
+      base = (100.to_d / selected_accounts.size).round(1, :down)
+      remaining = 100.to_d
+      selected_accounts.each_with_index.to_h do |account, index|
+        percentage = index == selected_accounts.length - 1 ? remaining : base
+        remaining -= percentage
+        [ account.id.to_s, percentage.to_s("F") ]
+      end
     end
 end

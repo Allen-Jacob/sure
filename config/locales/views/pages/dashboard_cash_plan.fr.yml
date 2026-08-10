@@ -61,11 +61,10 @@ fr:
           empty_description: Ajoute un compte de carte pour suivre son remboursement.
         allocation:
           title: Répartition de la prochaine paie
-          description: Ordre suggéré selon tes engagements actuels
-          card: Carte de crédit
-          savings: Épargne
-          fixed: Dépenses fixes
-          free: Argent libre
+          description: Comment ta prochaine paie sera répartie entre tes comptes
+          edit: Régler
+          empty_title: Aucun compte d’argent disponible
+          empty_description: Ajoute un compte courant ou d’épargne pour planifier ta paie.
         goals:
           title: Objectifs d’épargne
           description: Progression de tes trois objectifs prioritaires

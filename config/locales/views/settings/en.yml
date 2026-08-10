@@ -185,6 +185,9 @@ en:
             other: Every %{count} days
           payroll_categories: Payroll income categories
           payroll_categories_hint: Select the categories used by your instance. With no selection, Sure automatically recognizes common payroll labels.
+          paycheck_allocation: Next paycheck allocation
+          paycheck_allocation_hint: Choose the percentage sent to each selected cash account. The total must equal 100%.
+          allocation_total: Total allocation
           portability_note: These choices use IDs from your instance. If an account or category no longer exists after an export, the widgets automatically fall back to compatible accessible data.
           primary_credit_card: Main card for the widget
           save: Save cash plan
@@ -226,6 +229,7 @@ en:
           title: Enable preview features
           description: Opt in to in-progress features tagged preview or canary.
       update:
+        cash_plan_invalid_allocation: Paycheck allocations must be between 0% and 100% and total exactly 100%.
         cash_plan_invalid_schedule: Enter a valid paycheck date and amount, or leave both fields empty.
         cash_plan_saved: Cash plan settings were saved.
     profiles:

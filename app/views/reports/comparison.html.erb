@@ -1,0 +1,59 @@
+<% content_for :page_header do %>
+  <div class="mb-6 space-y-5">
+    <header class="space-y-1">
+      <h1 class="text-xl font-medium text-primary lg:text-3xl"><%= t("reports.comparison.title") %></h1>
+      <p class="text-sm text-secondary lg:text-base"><%= t("reports.comparison.subtitle") %></p>
+    </header>
+
+    <%= render DS::SegmentedControl.new(aria_label: t("reports.navigation.aria_label")) do |sc| %>
+      <% sc.with_segment(t("reports.navigation.overview"), active: false, href: reports_path) %>
+      <% sc.with_segment(t("reports.navigation.comparison"), active: true, href: comparison_reports_path) %>
+    <% end %>
+
+    <%= form_with url: comparison_reports_path, method: :get, class: "grid items-end gap-4 rounded-xl bg-surface-inset p-4 sm:grid-cols-3" do |form| %>
+      <div class="form-field">
+        <label class="form-field__label" for="primary_month"><%= t("reports.comparison.primary_month") %></label>
+        <%= form.month_field :primary_month, value: @primary_month.strftime("%Y-%m"), class: "form-field__input", required: true %>
+      </div>
+      <div class="form-field">
+        <label class="form-field__label" for="comparison_month"><%= t("reports.comparison.comparison_month") %></label>
+        <%= form.month_field :comparison_month, value: @comparison_month.strftime("%Y-%m"), class: "form-field__input", required: true %>
+      </div>
+      <%= render DS::Button.new(text: t("reports.comparison.compare"), type: :submit, class: "justify-center") %>
+    <% end %>
+
+    <% if @month_comparison.partial_period? %>
+      <%= render DS::Alert.new(
+        message: t("reports.comparison.partial_period", day: @month_comparison.through_day),
+        variant: :info
+      ) %>
+    <% end %>
+  </div>
+<% end %>
+
+<div class="space-y-6 pb-6" data-testid="month-comparison">
+  <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <% @month_comparison.metrics.each do |metric| %>
+      <%= render "reports/comparison_metric",
+                 metric: metric,
+                 primary_period: @month_comparison.primary_period,
+                 comparison_period: @month_comparison.comparison_period %>
+    <% end %>
+  </div>
+
+  <%= render "reports/comparison_categories",
+             title: t("reports.comparison.income_categories"),
+             description: t("reports.comparison.income_categories_description"),
+             rows: @month_comparison.income_categories,
+             primary_period: @month_comparison.primary_period,
+             comparison_period: @month_comparison.comparison_period,
+             favorable_direction: :up %>
+
+  <%= render "reports/comparison_categories",
+             title: t("reports.comparison.expense_categories"),
+             description: t("reports.comparison.expense_categories_description"),
+             rows: @month_comparison.expense_categories,
+             primary_period: @month_comparison.primary_period,
+             comparison_period: @month_comparison.comparison_period,
+             favorable_direction: :down %>
+</div>

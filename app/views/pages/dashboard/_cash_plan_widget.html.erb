@@ -135,25 +135,39 @@
 
 <% when "allocation" %>
   <div class="flex min-h-48 flex-col px-4 pb-2">
-    <p class="text-sm text-secondary"><%= t("pages.dashboard.cash_plan.allocation.description") %></p>
-    <div class="mt-5 flex h-2 overflow-hidden rounded-full bg-container-inset" aria-hidden="true">
-      <% cash_plan.fetch(:allocation).fetch(:items).each do |item| %>
-        <% color_class = { card: "bg-destructive", savings: "bg-success", fixed: "bg-warning", free: "bg-inverse" }.fetch(item.fetch(:key)) %>
-        <span class="<%= color_class %>" style="width: <%= item.fetch(:percent) %>%"></span>
-      <% end %>
+    <% allocation = cash_plan.fetch(:allocation) %>
+    <div class="flex items-start justify-between gap-4">
+      <p class="text-sm text-secondary"><%= t("pages.dashboard.cash_plan.allocation.description") %></p>
+      <%= link_to t("pages.dashboard.cash_plan.allocation.edit"), settings_preferences_path, class: "shrink-0 text-xs text-link underline underline-offset-2 hover:no-underline focus-ring" %>
     </div>
-    <dl class="mt-5 space-y-3">
-      <% cash_plan.fetch(:allocation).fetch(:items).each do |item| %>
-        <div class="flex items-center justify-between gap-3 text-sm">
-          <dt class="flex items-center gap-2 text-secondary">
-            <% dot_class = { card: "bg-destructive", savings: "bg-success", fixed: "bg-warning", free: "bg-inverse" }.fetch(item.fetch(:key)) %>
-            <span class="h-2 w-2 rounded-full <%= dot_class %>"></span>
-            <%= t("pages.dashboard.cash_plan.allocation.#{item.fetch(:key)}") %>
-          </dt>
-          <dd class="font-medium tabular-nums privacy-sensitive"><%= item.fetch(:amount).format(precision: 0) %></dd>
-        </div>
-      <% end %>
-    </dl>
+    <% if allocation.fetch(:items).any? %>
+      <div class="mt-5 flex h-2 overflow-hidden rounded-full bg-container-inset" aria-hidden="true">
+        <% allocation.fetch(:items).each_with_index do |item, index| %>
+          <% color_class = %w[bg-primary bg-success bg-warning bg-info bg-destructive][index % 5] %>
+          <span class="<%= color_class %>" style="width: <%= item.fetch(:percent) %>%"></span>
+        <% end %>
+      </div>
+      <dl class="mt-5 space-y-3">
+        <% allocation.fetch(:items).each_with_index do |item, index| %>
+          <div class="flex items-center justify-between gap-3 text-sm">
+            <dt class="flex min-w-0 items-center gap-2 text-secondary">
+              <% dot_class = %w[bg-primary bg-success bg-warning bg-info bg-destructive][index % 5] %>
+              <span class="h-2 w-2 shrink-0 rounded-full <%= dot_class %>"></span>
+              <span class="truncate"><%= item.fetch(:account_name) %></span>
+            </dt>
+            <dd class="flex shrink-0 items-baseline gap-2">
+              <span class="text-xs text-secondary"><%= number_to_percentage(item.fetch(:percent), precision: 1, strip_insignificant_zeros: true) %></span>
+              <span class="font-medium tabular-nums privacy-sensitive"><%= item.fetch(:amount).format(precision: 0) %></span>
+            </dd>
+          </div>
+        <% end %>
+      </dl>
+    <% else %>
+      <div class="my-auto py-8 text-center">
+        <p class="text-sm font-medium"><%= t("pages.dashboard.cash_plan.allocation.empty_title") %></p>
+        <p class="mt-1 text-xs text-secondary"><%= t("pages.dashboard.cash_plan.allocation.empty_description") %></p>
+      </div>
+    <% end %>
   </div>
 
 <% when "goals" %>

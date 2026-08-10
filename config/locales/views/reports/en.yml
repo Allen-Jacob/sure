@@ -1,6 +1,32 @@
 ---
 en:
   reports:
+    navigation:
+      aria_label: Report view
+      overview: Overview
+      comparison: Comparison
+    comparison:
+      title: Compare months
+      subtitle: Put any two months side by side to understand how your income, spending, and savings changed.
+      primary_month: Month to analyze
+      comparison_month: Compare with
+      compare: Compare
+      partial_period: Because one selected month is still in progress, both months are compared through day %{day}.
+      income_categories: Income comparison
+      income_categories_description: Compare salary and every other income category.
+      expense_categories: Expense comparison
+      expense_categories_description: See exactly which spending categories went up or down.
+      category: Category
+      difference: Difference
+      change: Change
+      no_category_data: No categorized activity was found for these months.
+      not_available: "—"
+      points: "%{value} pts"
+      metrics:
+        income: Total income
+        expenses: Total expenses
+        net_savings: Net savings
+        savings_rate: Savings rate
     index:
       title: Reports
       subtitle: Comprehensive insights into your financial health

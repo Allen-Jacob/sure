@@ -61,11 +61,10 @@ en:
           empty_description: Add a credit card account to see its repayment position.
         allocation:
           title: Next paycheck allocation
-          description: Suggested order based on current commitments
-          card: Credit card
-          savings: Savings
-          fixed: Fixed expenses
-          free: Free money
+          description: How your next paycheck will be split between accounts
+          edit: Adjust
+          empty_title: No cash account available
+          empty_description: Add a checking or savings account to plan your paycheck.
         goals:
           title: Savings goals
           description: Progress on your three highest-priority goals
