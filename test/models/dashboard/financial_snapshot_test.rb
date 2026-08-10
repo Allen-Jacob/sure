@@ -231,6 +231,65 @@ class Dashboard::FinancialSnapshotTest < ActiveSupport::TestCase
     assert_not snapshot.dig(:paycheck, :estimated)
   end
 
+  test "uses scheduled Agendrix hours for the configured pay period" do
+    calendar_url = "https://app.agendrix.com/api/calendar/11111111-2222-3333-4444-555555555555.ics"
+    calendar = mock
+    Dashboard::PayrollCalendar.expects(:new).with(url: calendar_url).returns(calendar)
+    calendar.expects(:hours_between)
+            .with(Date.new(2026, 8, 2), Date.new(2026, 8, 15))
+            .returns(17.5.to_d)
+    @user.update_dashboard_cash_plan_settings({
+      "work_calendar_url" => calendar_url,
+      "hourly_pay_rate" => "22.50",
+      "pay_period_anchor_date" => "2026-08-02",
+      "payday_offset_days" => 5,
+      "pay_cycle_days" => 14
+    })
+
+    snapshot = Dashboard::FinancialSnapshot.new(
+      family: @family,
+      user: @user,
+      accounts: @user.accessible_accounts.visible,
+      today: Date.new(2026, 8, 10)
+    ).to_h
+
+    paycheck = snapshot.fetch(:paycheck)
+    assert paycheck.fetch(:calendar)
+    assert paycheck.fetch(:estimated)
+    assert_equal 17.5.to_d, paycheck.fetch(:scheduled_hours)
+    assert_equal 393.75.to_d, paycheck.fetch(:amount).amount
+    assert_equal Date.new(2026, 8, 2), paycheck.fetch(:pay_period_start)
+    assert_equal Date.new(2026, 8, 15), paycheck.fetch(:pay_period_end)
+    assert_equal Date.new(2026, 8, 20), paycheck.fetch(:next_date)
+    assert_equal Date.new(2026, 8, 6), paycheck.fetch(:last_date)
+    assert_equal 10, paycheck.fetch(:days_remaining)
+  end
+
+  test "falls back to inferred payroll when the Agendrix calendar is unavailable" do
+    calendar_url = "https://app.agendrix.com/api/calendar/11111111-2222-3333-4444-555555555555.ics"
+    Dashboard::PayrollCalendar.expects(:new)
+                              .with(url: calendar_url)
+                              .raises(Dashboard::PayrollCalendar::Unavailable)
+    @user.update_dashboard_cash_plan_settings({
+      "work_calendar_url" => calendar_url,
+      "hourly_pay_rate" => "22.50",
+      "pay_period_anchor_date" => "2026-08-02",
+      "payday_offset_days" => 5,
+      "pay_cycle_days" => 14
+    })
+
+    snapshot = Dashboard::FinancialSnapshot.new(
+      family: @family,
+      user: @user,
+      accounts: @user.accessible_accounts.visible,
+      today: @today
+    ).to_h
+
+    assert_not snapshot.dig(:paycheck, :calendar)
+    assert_equal 2000.to_d, snapshot.dig(:paycheck, :amount).amount
+    assert_equal @today + 7, snapshot.dig(:paycheck, :next_date)
+  end
+
   test "old manual pay dates advance without iterating one pay cycle at a time" do
     @user.update_dashboard_cash_plan_settings({
       "next_pay_date" => (@today - 29).iso8601,

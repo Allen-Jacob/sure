@@ -2,6 +2,7 @@ require "test_helper"
 
 class Settings::PreferencesControllerTest < ActionDispatch::IntegrationTest
   setup do
+    ensure_tailwind_build
     sign_in users(:family_admin)
   end
 
@@ -13,6 +14,10 @@ class Settings::PreferencesControllerTest < ActionDispatch::IntegrationTest
     assert_select "form input[name='dashboard_cash_plan[depository_account_ids][]']", minimum: 1
     assert_select "form input[name='dashboard_cash_plan[payroll_category_ids][]']", minimum: 1
     assert_select "form input[name^='dashboard_cash_plan[paycheck_allocations]']", minimum: 1
+    assert_select "form input[name='dashboard_cash_plan[work_calendar_url]']", count: 1
+    assert_select "form input[name='dashboard_cash_plan[hourly_pay_rate]']", count: 1
+    assert_select "form input[name='dashboard_cash_plan[pay_period_anchor_date]']", count: 1
+    assert_select "form input[name='dashboard_cash_plan[payday_offset_days]']", count: 1
   end
 
   test "group moniker uses group currencies copy and hides legacy currency field" do
@@ -116,6 +121,48 @@ class Settings::PreferencesControllerTest < ActionDispatch::IntegrationTest
       { checking.id.to_s => "30.0", savings.id.to_s => "70.0" },
       user.reload.dashboard_cash_plan_settings["paycheck_allocations"]
     )
+  end
+
+  test "update saves an Agendrix calendar pay schedule" do
+    user = users(:family_admin)
+    calendar_url = "https://app.agendrix.com/api/calendar/11111111-2222-3333-4444-555555555555.ics"
+
+    patch settings_preferences_url, params: {
+      dashboard_cash_plan: {
+        work_calendar_url: calendar_url,
+        hourly_pay_rate: "22,50",
+        pay_period_anchor_date: "2026-08-02",
+        payday_offset_days: "5",
+        pay_cycle_days: 14
+      }
+    }
+
+    assert_redirected_to settings_preferences_url
+    settings = user.reload.dashboard_cash_plan_settings
+    assert_equal calendar_url, settings["work_calendar_url"]
+    assert_equal "22.5", settings["hourly_pay_rate"]
+    assert_equal "2026-08-02", settings["pay_period_anchor_date"]
+    assert_equal 5, settings["payday_offset_days"]
+    assert_equal 14, settings["pay_cycle_days"]
+  end
+
+  test "update rejects an unsafe work calendar URL" do
+    user = users(:family_admin)
+    original_preferences = user.preferences.deep_dup
+
+    patch settings_preferences_url, params: {
+      dashboard_cash_plan: {
+        work_calendar_url: "http://localhost/private.ics",
+        hourly_pay_rate: "22.50",
+        pay_period_anchor_date: "2026-08-02",
+        payday_offset_days: "5",
+        pay_cycle_days: 14
+      }
+    }
+
+    assert_redirected_to settings_preferences_url
+    assert_equal "Enter a valid Agendrix calendar, hourly amount, pay-period start, and payday delay—or leave all four fields empty.", flash[:alert]
+    assert_equal original_preferences, user.reload.preferences
   end
 
   test "update rejects paycheck allocations that do not total 100 percent" do

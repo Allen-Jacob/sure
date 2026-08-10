@@ -7,6 +7,7 @@ en:
         up_to_date: On track
         not_available: Not available
         paycheck_configured: Configured paycheck
+        paycheck_agendrix: Agendrix scheduled pay
         paycheck_fallback: Expected income
         mixed_currency_notice:
           one: "One account is excluded from this day-to-day view because it is not in %{currency}."
@@ -32,6 +33,9 @@ en:
         paycheck:
           title: Next paycheck
           days_remaining: Days remaining
+          calendar_estimated: Calculated from your scheduled Agendrix hours
+          calendar_hours: "%{hours} scheduled hours"
+          calendar_period: "%{start_date}–%{end_date}"
           estimated: Estimated from your salary history
           empty_title: No paycheck detected
           empty_description: Categorize a salary transaction to enable payday estimates.
