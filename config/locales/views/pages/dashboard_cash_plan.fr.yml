@@ -7,6 +7,7 @@ fr:
         up_to_date: En bonne voie
         not_available: Non disponible
         paycheck_configured: Paie configurée
+        paycheck_agendrix: Paie planifiée dans Agendrix
         paycheck_fallback: Revenu attendu
         mixed_currency_notice:
           one: "Un compte est exclu de cette vue quotidienne, car il n’est pas en %{currency}."
@@ -32,6 +33,9 @@ fr:
         paycheck:
           title: Prochaine paie
           days_remaining: Jours restants
+          calendar_estimated: Calculée à partir de tes heures planifiées dans Agendrix
+          calendar_hours: "%{hours} h planifiées"
+          calendar_period: "Du %{start_date} au %{end_date}"
           estimated: Estimation basée sur ton historique de salaire
           empty_title: Aucune paie détectée
           empty_description: Catégorise une transaction de salaire pour activer les estimations.

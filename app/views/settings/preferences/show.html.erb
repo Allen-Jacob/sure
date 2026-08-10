@@ -169,6 +169,39 @@
       </div>
     </div>
 
+    <fieldset class="space-y-4 rounded-xl border border-secondary bg-container-inset p-4">
+      <div>
+        <legend class="text-sm font-medium text-primary"><%= t(".cash_plan.work_calendar") %></legend>
+        <p class="mt-1 text-sm text-secondary"><%= t(".cash_plan.work_calendar_hint") %></p>
+      </div>
+      <%= form.text_field :work_calendar_url,
+                          label: t(".cash_plan.work_calendar_url"),
+                          value: @cash_plan_settings["work_calendar_url"],
+                          placeholder: t(".cash_plan.work_calendar_url_placeholder"),
+                          autocomplete: "off",
+                          autocapitalize: "none",
+                          spellcheck: "false",
+                          inputmode: "url" %>
+      <p class="text-xs text-secondary"><%= t(".cash_plan.work_calendar_privacy") %></p>
+      <div class="grid gap-4 sm:grid-cols-3">
+        <%= form.number_field :hourly_pay_rate,
+                              label: t(".cash_plan.hourly_pay_rate", currency: @user.family.primary_currency_code),
+                              value: @cash_plan_settings["hourly_pay_rate"],
+                              min: 0,
+                              step: "0.01" %>
+        <%= form.date_field :pay_period_anchor_date,
+                            label: t(".cash_plan.pay_period_anchor_date"),
+                            value: @cash_plan_settings["pay_period_anchor_date"] %>
+        <%= form.number_field :payday_offset_days,
+                              label: t(".cash_plan.payday_offset_days"),
+                              value: @cash_plan_settings["payday_offset_days"],
+                              min: Settings::PreferencesController::PAYDAY_OFFSET_DAYS.begin,
+                              max: Settings::PreferencesController::PAYDAY_OFFSET_DAYS.end,
+                              step: 1 %>
+      </div>
+      <p class="text-xs text-secondary"><%= t(".cash_plan.pay_period_hint") %></p>
+    </fieldset>
+
     <div class="space-y-3">
       <div>
         <p class="text-sm font-medium text-primary"><%= t(".cash_plan.manual_schedule") %></p>

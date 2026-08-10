@@ -2,7 +2,9 @@ class Settings::PreferencesController < ApplicationController
   layout "settings"
 
   PAY_CYCLE_DAYS = [ 7, 14, 15, 28, 30, 31 ].freeze
+  PAYDAY_OFFSET_DAYS = (0..31).freeze
   class InvalidPaycheckAllocation < ArgumentError; end
+  class InvalidPayrollCalendar < ArgumentError; end
 
   def show
     @user = Current.user
@@ -40,6 +42,8 @@ class Settings::PreferencesController < ApplicationController
       redirect_to settings_preferences_path, notice: t(".cash_plan_saved")
     rescue InvalidPaycheckAllocation
       redirect_to settings_preferences_path, alert: t(".cash_plan_invalid_allocation")
+    rescue InvalidPayrollCalendar
+      redirect_to settings_preferences_path, alert: t(".cash_plan_invalid_calendar")
     rescue ArgumentError
       redirect_to settings_preferences_path, alert: t(".cash_plan_invalid_schedule")
     end
@@ -50,6 +54,10 @@ class Settings::PreferencesController < ApplicationController
         :next_pay_date,
         :expected_pay_amount,
         :pay_cycle_days,
+        :work_calendar_url,
+        :hourly_pay_rate,
+        :pay_period_anchor_date,
+        :payday_offset_days,
         depository_account_ids: [],
         credit_card_account_ids: [],
         payroll_category_ids: [],
@@ -82,6 +90,7 @@ class Settings::PreferencesController < ApplicationController
       settings["pay_cycle_days"] = pay_cycle_days if pay_cycle_days.in?(PAY_CYCLE_DAYS)
       add_paycheck_allocations!(settings, submitted, accounts:, depository_ids:)
       add_manual_pay_schedule!(settings, submitted)
+      add_payroll_calendar!(settings, submitted)
       settings
     end
 
@@ -133,6 +142,31 @@ class Settings::PreferencesController < ApplicationController
       settings["expected_pay_amount"] = parsed_amount.to_s("F")
     rescue Date::Error, ArgumentError
       raise ArgumentError
+    end
+
+    def add_payroll_calendar!(settings, submitted)
+      values = {
+        url: submitted[:work_calendar_url].to_s.strip,
+        hourly_rate: submitted[:hourly_pay_rate].to_s.strip,
+        anchor_date: submitted[:pay_period_anchor_date].to_s.strip,
+        payday_offset: submitted[:payday_offset_days].to_s.strip
+      }
+      return if values.values.all?(&:blank?)
+      raise InvalidPayrollCalendar if values.values.any?(&:blank?)
+      raise InvalidPayrollCalendar unless Dashboard::PayrollCalendar.valid_url?(values.fetch(:url))
+
+      hourly_rate = BigDecimal(values.fetch(:hourly_rate).tr(",", "."))
+      anchor_date = Date.iso8601(values.fetch(:anchor_date))
+      payday_offset = Integer(values.fetch(:payday_offset), 10)
+      raise InvalidPayrollCalendar unless hourly_rate.finite? && hourly_rate.positive?
+      raise InvalidPayrollCalendar unless payday_offset.in?(PAYDAY_OFFSET_DAYS)
+
+      settings["work_calendar_url"] = values.fetch(:url)
+      settings["hourly_pay_rate"] = hourly_rate.to_s("F")
+      settings["pay_period_anchor_date"] = anchor_date.iso8601
+      settings["payday_offset_days"] = payday_offset
+    rescue Date::Error, ArgumentError
+      raise InvalidPayrollCalendar
     end
 
     def allowed_ids(submitted_ids, allowed_records)
