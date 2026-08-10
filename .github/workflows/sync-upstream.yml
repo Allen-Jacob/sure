@@ -27,6 +27,18 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Validate automation token
+        env:
+          AUTOMATION_TOKEN: ${{ secrets.AUTOMATION_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$AUTOMATION_TOKEN" ]]; then
+            echo "::error::The AUTOMATION_TOKEN repository secret is missing."
+            exit 1
+          fi
+
       - name: Checkout mirror branch
         uses: actions/checkout@v6
         with:
@@ -61,6 +73,18 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Validate automation token
+        env:
+          AUTOMATION_TOKEN: ${{ secrets.AUTOMATION_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$AUTOMATION_TOKEN" ]]; then
+            echo "::error::The AUTOMATION_TOKEN repository secret is missing."
+            exit 1
+          fi
+
       - name: Checkout custom branch
         uses: actions/checkout@v6
         with:

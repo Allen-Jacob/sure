@@ -2,22 +2,26 @@ name: Sure Custom CI
 
 on:
   pull_request:
-    branches:
-      - custom-dashboard
+    branches: [custom-dashboard]
 
 permissions:
   contents: read
 
-jobs:
+concurrency:
+  group: custom-dashboard-ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
+jobs:
   docker-build:
     name: Docker build
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -29,5 +33,7 @@ jobs:
           file: ./Dockerfile
           push: false
           platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          build-args: BUILD_COMMIT_SHA=${{ github.event.pull_request.head.sha }}
+          cache-from: type=gha,scope=custom-dashboard-ci-amd64
+          cache-to: type=gha,mode=max,scope=custom-dashboard-ci-amd64
+          provenance: false
