@@ -341,25 +341,29 @@ class Api::V1::TransactionsController < Api::V1::BaseController
     end
 
     def entry_params_for_update
-      entry_params = {
-        name: transaction_params[:name] || transaction_params[:description],
-        date: transaction_params[:date],
-        notes: transaction_params[:notes],
-        entryable_attributes: {
-          id: @entry.entryable_id,
-          category_id: transaction_params[:category_id],
-          merchant_id: transaction_params[:merchant_id]
-          # Note: tag_ids handled separately in update action to distinguish
-          # "not provided" from "explicitly set to empty"
-        }.compact_blank
-      }
+      entryable_attributes = { id: @entry.entryable_id }
+      if transaction_params.key?(:category_id)
+        entryable_attributes[:category_id] = transaction_params[:category_id].presence
+      end
+      if transaction_params.key?(:merchant_id)
+        entryable_attributes[:merchant_id] = transaction_params[:merchant_id].presence
+      end
+
+      # Preserve omitted values, while retaining explicit nulls used by native
+      # clients to clear optional fields.
+      entry_params = { entryable_attributes: entryable_attributes }
+      if transaction_params.key?(:name) || transaction_params.key?(:description)
+        entry_params[:name] = transaction_params[:name] || transaction_params[:description]
+      end
+      entry_params[:date] = transaction_params[:date] if transaction_params.key?(:date)
+      entry_params[:notes] = transaction_params[:notes] if transaction_params.key?(:notes)
 
       # Only update amount if provided
       if transaction_params[:amount].present?
         entry_params[:amount] = calculate_signed_amount
       end
 
-      entry_params.compact
+      entry_params
     end
 
     # Check if tag_ids was explicitly provided in the request.
