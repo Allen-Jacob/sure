@@ -1,0 +1,97 @@
+---
+de:
+  pages:
+    dashboard:
+      cash_plan:
+        attention: Zu beachten
+        up_to_date: Im Plan
+        not_available: Nicht verfügbar
+        paycheck_configured: Eingerichtetes Gehalt
+        paycheck_agendrix: In Agendrix geplantes Gehalt
+        paycheck_fallback: Erwartetes Einkommen
+        mixed_currency_notice:
+          one: "Ein Konto wird aus dieser Alltagsübersicht ausgeschlossen, weil es nicht in %{currency} geführt wird."
+          other: "%{count} Konten werden aus dieser Alltagsübersicht ausgeschlossen, weil sie nicht in %{currency} geführt werden."
+        customize:
+          button: Anpassen
+          title: Widgets auswählen
+          description: Blende Widgets ein oder aus. Deine Auswahl wird automatisch gespeichert.
+          hide: "Widget %{widget} entfernen"
+          empty_title: Keine Widgets angezeigt
+          empty_description: Füge über „Anpassen“ die Widgets hinzu, die du sehen möchtest.
+          groups:
+            cash_plan: Alltag
+            analysis: Sure-Analysen
+        available:
+          title: Tatsächlich verfügbares Geld
+          description: Was nach deinen kurzfristigen Verpflichtungen übrig bleibt
+          helper: Sicher verwendbar, ohne bereits anderweitig eingeplantes Geld anzutasten
+          cash: Kontostand
+          card_debt: Kreditkarten
+          planned: Geplante Zahlungen
+          reserved: Für Ziele reserviert
+        paycheck:
+          title: Nächstes Gehalt
+          days_remaining: Verbleibende Tage
+          calendar_estimated: Aus deinen in Agendrix geplanten Stunden berechnet
+          calendar_hours: "%{hours} geplante Stunden"
+          calendar_period: "%{start_date}–%{end_date}"
+          estimated: Aus deinem bisherigen Gehalt geschätzt
+          empty_title: Kein Gehalt erkannt
+          empty_description: Ordne eine Gehaltstransaktion einer Kategorie zu, um Schätzungen zum Zahltag zu aktivieren.
+        budget:
+          title: Budget bis zum Zahltag
+          description: Eine einfache Orientierung für deine Ausgaben
+          total_label: Insgesamt noch verfügbar
+          daily_label: Bequemer Tagesdurchschnitt
+          for_days:
+            one: für 1 Tag
+            other: "für %{count} Tage"
+        spending:
+          title: Ausgaben seit dem letzten Gehalt
+          since: "Seit %{date}"
+          days:
+            one: 1 Tag vergangen
+            other: "%{count} Tage vergangen"
+          change: "%{percent} % gegenüber dem vorherigen Zeitraum"
+          previous_period: Vergleichbarer vorheriger Zeitraum
+        credit_card:
+          title: Kreditkarte
+          current: Aktueller Saldo
+          statement: Abrechnungssaldo
+          due: Fälligkeitsdatum
+          repayable: Für die Rückzahlung verfügbar
+          empty_title: Keine Kreditkarte
+          empty_description: Füge ein Kreditkartenkonto hinzu, um den Rückzahlungsstatus zu sehen.
+        allocation:
+          title: Aufteilung des nächsten Gehalts
+          description: So wird dein nächstes Gehalt auf deine Konten verteilt
+          edit: Anpassen
+          empty_title: Kein Geldkonto verfügbar
+          empty_description: Füge ein Giro- oder Sparkonto hinzu, um dein Gehalt zu planen.
+        goals:
+          title: Sparziele
+          description: Fortschritt deiner drei wichtigsten Ziele
+          view_plan: Plan anzeigen
+          empty_title: Noch keine Sparziele
+          empty_description: Erstelle ein Ziel, um Geld für dein nächstes Vorhaben zurückzulegen.
+        purchases:
+          title: Geplante Anschaffungen
+          description: Terminierte Ziele und die Auswirkung eines sofortigen Kaufs
+          price: Preis
+          saved: Zurückgelegt
+          impact: Nach dem Kauf übrig
+          empty_title: Keine geplante Anschaffung
+          empty_description: Füge einem Sparziel ein Zieldatum hinzu, um es hier zu verfolgen.
+        categories:
+          title: Ausgaben nach Kategorie
+          description: Wichtigste Kategorien seit deinem letzten Gehalt
+          empty_title: Keine Ausgaben in diesem Zeitraum
+          empty_description: Die Kategoriesummen erscheinen, sobald neue Ausgaben erfasst wurden.
+        review:
+          title: Zu prüfende Transaktionen
+          description: Einträge, die möglicherweise eine kurze Entscheidung erfordern
+          uncategorized: Nicht kategorisierte Transaktionen
+          duplicates: Mögliche Duplikate
+          missing_refunds: Überfällige erwartete Rückerstattungen
+          open_transactions: Transaktionen prüfen
