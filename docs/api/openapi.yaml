@@ -1005,6 +1005,23 @@ components:
         updated_at:
           type: string
           format: date-time
+    MerchantImportResult:
+      type: object
+      required:
+      - imported
+      - skipped
+      - merchants
+      properties:
+        imported:
+          type: integer
+          description: Number of merchants successfully created
+        skipped:
+          type: integer
+          description: Number of rows skipped (duplicates or invalid)
+        merchants:
+          type: array
+          items:
+            "$ref": "#/components/schemas/MerchantDetail"
     Tag:
       type: object
       required:
@@ -1564,6 +1581,20 @@ components:
           - liability_payment
           - loan_payment
         notes:
+          type: string
+          nullable: true
+        source_fee_amount:
+          type: string
+          nullable: true
+          description: Fee charged to the source account
+        source_fee_currency:
+          type: string
+          nullable: true
+        destination_fee_amount:
+          type: string
+          nullable: true
+          description: Fee deducted from the destination account
+        destination_fee_currency:
           type: string
           nullable: true
         inflow_transaction:
@@ -2993,6 +3024,61 @@ components:
           "$ref": "#/components/schemas/Money"
         liabilities:
           "$ref": "#/components/schemas/Money"
+    Paycheck:
+      type: object
+      required:
+      - name
+      - amount
+      - last_date
+      - next_date
+      - days_remaining
+      - estimated
+      - source
+      properties:
+        name:
+          type: string
+        amount:
+          "$ref": "#/components/schemas/Money"
+        last_date:
+          type: string
+          format: date
+        next_date:
+          type: string
+          format: date
+        days_remaining:
+          type: integer
+        estimated:
+          type: boolean
+        source:
+          type: string
+          enum:
+          - agendrix
+          - configured
+          - recurring
+          - inferred
+        scheduled_hours:
+          type: number
+          nullable: true
+        pay_period_start:
+          type: string
+          format: date
+          nullable: true
+        pay_period_end:
+          type: string
+          format: date
+          nullable: true
+    PaycheckResponse:
+      type: object
+      required:
+      - currency
+      - paycheck
+      properties:
+        currency:
+          type: string
+        paycheck:
+          allOf:
+          - "$ref": "#/components/schemas/Paycheck"
+          nullable: true
     SuccessMessage:
       type: object
       required:
@@ -5723,6 +5809,39 @@ paths:
                 type: array
                 items:
                   "$ref": "#/components/schemas/MerchantDetail"
+    post:
+      summary: Import merchants from CSV
+      tags:
+      - Merchants
+      security:
+      - apiKeyAuth: []
+      parameters: []
+      responses:
+        '201':
+          description: merchants imported
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/MerchantImportResult"
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '422':
+          description: missing file or invalid CSV
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: file
+        required: true
+        description: 'CSV file with columns: name* (required), color, website_url'
   "/api/v1/merchants/{id}":
     parameters:
     - name: id
@@ -5746,6 +5865,28 @@ paths:
                 "$ref": "#/components/schemas/MerchantDetail"
         '404':
           description: merchant not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v1/paycheck":
+    get:
+      summary: Show upcoming paycheck
+      tags:
+      - Paycheck
+      description: Returns the upcoming paycheck calculated by Sure, including Agendrix-based
+        estimates when configured. Calendar URLs and payroll settings are never exposed.
+      security:
+      - apiKeyAuth: []
+      responses:
+        '200':
+          description: paycheck returned
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaycheckResponse"
+        '401':
+          description: unauthorized
           content:
             application/json:
               schema:
