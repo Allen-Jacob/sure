@@ -645,6 +645,7 @@ Rails.application.routes.draw do
       resource :usage, only: [ :show ], controller: :usage
       resource :balance_sheet, only: [ :show ], controller: :balance_sheet
       resource :family_settings, only: [ :show ], controller: :family_settings
+      resource :paycheck, only: [ :show ], controller: :paycheck
       post :sync, to: "sync#create", as: :sync_job
       resources :syncs, only: [ :index, :show ] do
         get :latest, on: :collection

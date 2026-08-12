@@ -1667,6 +1667,33 @@ RSpec.configure do |config|
               liabilities: { '$ref' => '#/components/schemas/Money' }
             }
           },
+          Paycheck: {
+            type: :object,
+            required: %w[name amount last_date next_date days_remaining estimated source],
+            properties: {
+              name: { type: :string },
+              amount: { '$ref' => '#/components/schemas/Money' },
+              last_date: { type: :string, format: :date },
+              next_date: { type: :string, format: :date },
+              days_remaining: { type: :integer },
+              estimated: { type: :boolean },
+              source: { type: :string, enum: %w[agendrix configured recurring inferred] },
+              scheduled_hours: { type: :number, nullable: true },
+              pay_period_start: { type: :string, format: :date, nullable: true },
+              pay_period_end: { type: :string, format: :date, nullable: true }
+            }
+          },
+          PaycheckResponse: {
+            type: :object,
+            required: %w[currency paycheck],
+            properties: {
+              currency: { type: :string },
+              paycheck: {
+                allOf: [ { '$ref' => '#/components/schemas/Paycheck' } ],
+                nullable: true
+              }
+            }
+          },
           SuccessMessage: {
             type: :object,
             required: %w[message],

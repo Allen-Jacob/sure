@@ -51,6 +51,13 @@ module Dashboard
       end
     end
 
+    # Public, privacy-safe entry point for API clients that only need the
+    # upcoming paycheck. The Agendrix calendar URL and hourly-rate settings
+    # remain internal to the server.
+    def paycheck_summary
+      paycheck
+    end
+
     private
       def money(amount)
         Money.new(amount.to_d, @currency)
