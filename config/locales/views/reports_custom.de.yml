@@ -1,0 +1,29 @@
+---
+de:
+  reports:
+    navigation:
+      aria_label: Berichtsansicht
+      overview: Übersicht
+      comparison: Vergleich
+    comparison:
+      title: Monate vergleichen
+      subtitle: Vergleiche zwei beliebige Monate, um Veränderungen bei Einkommen, Ausgaben und Ersparnissen zu verstehen.
+      primary_month: Zu analysierender Monat
+      comparison_month: Vergleichen mit
+      compare: Vergleichen
+      partial_period: Da einer der ausgewählten Monate noch läuft, werden beide Monate bis zum Tag %{day} verglichen.
+      income_categories: Einkommensvergleich
+      income_categories_description: Vergleiche dein Gehalt mit allen anderen Einkommenskategorien.
+      expense_categories: Ausgabenvergleich
+      expense_categories_description: Sieh genau, welche Ausgabenkategorien gestiegen oder gesunken sind.
+      category: Kategorie
+      difference: Differenz
+      change: Veränderung
+      no_category_data: Für diese Monate wurden keine kategorisierten Aktivitäten gefunden.
+      not_available: "—"
+      points: "%{value} Pkt."
+      metrics:
+        income: Gesamteinkommen
+        expenses: Gesamtausgaben
+        net_savings: Nettoersparnisse
+        savings_rate: Sparquote
