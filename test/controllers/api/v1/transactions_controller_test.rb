@@ -619,6 +619,21 @@ class Api::V1::TransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Updated Transaction Name", response_data["name"]
   end
 
+  test "should clear category when update explicitly sends null" do
+    @transaction.update!(category: @family.categories.first!)
+    @transaction.entry.update!(notes: "Temporary note")
+
+    patch api_v1_transaction_url(@transaction),
+          params: { transaction: { category_id: nil, notes: nil } },
+          headers: api_headers(@api_key),
+          as: :json
+
+    assert_response :success
+    assert_nil @transaction.reload.category
+    assert_nil @transaction.entry.reload.notes
+    assert_nil JSON.parse(response.body)["category"]
+  end
+
   test "should reject update with read-only API key" do
     update_params = {
       transaction: {

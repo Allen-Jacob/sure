@@ -592,6 +592,92 @@ components:
             "$ref": "#/components/schemas/BudgetSummary"
         pagination:
           "$ref": "#/components/schemas/Pagination"
+    Goal:
+      type: object
+      required:
+      - id
+      - name
+      - currency
+      - state
+      - status
+      - progress_percent
+      - target_amount
+      - target_amount_cents
+      - current_amount
+      - current_amount_cents
+      - remaining_amount
+      - remaining_amount_cents
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        currency:
+          type: string
+        target_date:
+          type: string
+          format: date
+          nullable: true
+        state:
+          type: string
+          enum:
+          - active
+          - paused
+          - completed
+          - archived
+        status:
+          type: string
+          enum:
+          - reached
+          - on_track
+          - behind
+          - no_target_date
+          - paused
+          - completed
+          - archived
+        progress_percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        color:
+          type: string
+          nullable: true
+        icon:
+          type: string
+          nullable: true
+        target_amount:
+          type: string
+        target_amount_cents:
+          type: integer
+        current_amount:
+          type: string
+        current_amount_cents:
+          type: integer
+        remaining_amount:
+          type: string
+        remaining_amount_cents:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    GoalCollection:
+      type: object
+      required:
+      - goals
+      - pagination
+      properties:
+        goals:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Goal"
+        pagination:
+          "$ref": "#/components/schemas/Pagination"
     BudgetCategorySummary:
       type: object
       required:
@@ -4237,6 +4323,70 @@ paths:
                 "$ref": "#/components/schemas/ErrorResponse"
         '404':
           description: budget not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v1/goals":
+    get:
+      summary: List goals
+      tags:
+      - Goals
+      security:
+      - apiKeyAuth: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: goals listed
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GoalCollection"
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '403':
+          description: insufficient scope
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v1/goals/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      summary: Retrieve a goal
+      tags:
+      - Goals
+      security:
+      - apiKeyAuth: []
+      responses:
+        '200':
+          description: goal retrieved
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Goal"
+        '404':
+          description: goal not found
           content:
             application/json:
               schema:

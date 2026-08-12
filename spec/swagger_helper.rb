@@ -359,6 +359,37 @@ RSpec.configure do |config|
               pagination: { '$ref' => '#/components/schemas/Pagination' }
             }
           },
+          Goal: {
+            type: :object,
+            required: %w[id name currency state status progress_percent target_amount target_amount_cents current_amount current_amount_cents remaining_amount remaining_amount_cents created_at updated_at],
+            properties: {
+              id: { type: :string, format: :uuid },
+              name: { type: :string },
+              currency: { type: :string },
+              target_date: { type: :string, format: :date, nullable: true },
+              state: { type: :string, enum: %w[active paused completed archived] },
+              status: { type: :string, enum: %w[reached on_track behind no_target_date paused completed archived] },
+              progress_percent: { type: :integer, minimum: 0, maximum: 100 },
+              color: { type: :string, nullable: true },
+              icon: { type: :string, nullable: true },
+              target_amount: { type: :string },
+              target_amount_cents: { type: :integer },
+              current_amount: { type: :string },
+              current_amount_cents: { type: :integer },
+              remaining_amount: { type: :string },
+              remaining_amount_cents: { type: :integer },
+              created_at: { type: :string, format: :'date-time' },
+              updated_at: { type: :string, format: :'date-time' }
+            }
+          },
+          GoalCollection: {
+            type: :object,
+            required: %w[goals pagination],
+            properties: {
+              goals: { type: :array, items: { '$ref' => '#/components/schemas/Goal' } },
+              pagination: { '$ref' => '#/components/schemas/Pagination' }
+            }
+          },
           BudgetCategorySummary: {
             type: :object,
             required: %w[id budget_id currency subcategory inherits_parent_budget category created_at updated_at],
