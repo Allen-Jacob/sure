@@ -482,7 +482,6 @@ Rails.application.routes.draw do
 
     collection do
       delete :clear_filter
-      patch :update_preferences
     end
 
     member do
