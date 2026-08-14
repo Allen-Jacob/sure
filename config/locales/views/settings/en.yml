@@ -398,7 +398,7 @@ en:
         ok: Connected
         warn: Action needed
         err: Error
-        off: Not configured
+        "off": Not configured
       maturity:
         beta: Beta
         alpha: Alpha

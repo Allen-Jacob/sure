@@ -120,6 +120,7 @@ an [AGPLv3 license](https://github.com/we-promise/sure/blob/main/LICENSE).
 - "Sure" is not, and refers to this community fork.
 
 ![Alt](https://repobeats.axiom.co/api/embed/3a9753cff07501fba8a6749d0ebd567ff63848c8.svg "Repobeats analytics image")
+<<<<<<< Updated upstream
 
 <p align="center">
   <a href="https://gittensor.io/miners/repository?name=we-promise%2Fsure">
@@ -130,3 +131,22 @@ an [AGPLv3 license](https://github.com/we-promise/sure/blob/main/LICENSE).
     </picture>
   </a>
 </p>
+=======
+
+Si le changement est utile à toutes les installations de Sure et ne dépend pas des personnalisations de ce fork, envisagez de le proposer directement au [projet amont](https://github.com/we-promise/sure).
+
+## Origine, licence et marques
+
+La filiation du code est la suivante :
+
+```text
+maybe-finance/maybe (projet original archivé)
+└── we-promise/sure (fork communautaire actif)
+    └── Allen-Jacob/sure (ce fork personnalisé)
+```
+
+Le code est distribué sous la [GNU Affero General Public License v3](LICENSE). Toute redistribution ou tout fork doit conserver la licence et les attributions applicables.
+
+« Maybe » est une marque de Maybe Finance Inc. Son nom et son logo ne doivent pas être utilisés pour laisser entendre une affiliation ou une approbation. Le présent dépôt utilise le nom Sure conformément au projet communautaire dont il dérive.
+
+>>>>>>> Stashed changes

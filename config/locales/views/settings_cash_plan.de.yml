@@ -1,0 +1,43 @@
+---
+de:
+  settings:
+    preferences:
+      show:
+        cash_plan:
+          automatic: Automatische Erkennung
+          cash_accounts: Einzubeziehende Geldkonten
+          credit_cards: Einzubeziehende Kreditkarten
+          expected_pay_amount: Erwarteter Betrag (%{currency})
+          hourly_pay_rate: Geschätzter Betrag pro geplanter Stunde (%{currency})
+          manual_schedule: Nächstes Gehalt manuell festlegen (optional)
+          manual_schedule_hint: Fülle beide Felder aus, um den Agendrix-Kalender und die automatische Schätzung zu überschreiben. Lass beide leer, um die eingerichtete Quelle zu verwenden.
+          next_pay_date: Datum des nächsten Gehalts
+          no_cash_accounts: Kein verfügbares Giro- oder Sparkonto verwendet die Basiswährung.
+          no_credit_cards: Keine verfügbare Kreditkarte verwendet die Basiswährung.
+          pay_cycle_days: Gehaltsrhythmus
+          pay_cycle_days_option:
+            one: Jeden Tag
+            other: Alle %{count} Tage
+          pay_period_anchor_date: Beginn eines bekannten Gehaltszeitraums
+          pay_period_hint: Verwende zum Beispiel den 2. August bei einem 14-Tage-Rhythmus und 5 Tagen bis zur Auszahlung für den Zeitraum vom 2. bis 15. August mit Auszahlung am 20. August.
+          payday_offset_days: Tage vom Periodenende bis zum Zahltag
+          payroll_categories: Kategorien für Gehaltseinkommen
+          payroll_categories_hint: Wähle die Kategorien deiner Installation aus. Ohne Auswahl erkennt Sure gängige Gehaltsbezeichnungen automatisch.
+          paycheck_allocation: Aufteilung des nächsten Gehalts
+          paycheck_allocation_hint: Wähle den Prozentsatz, der auf jedes ausgewählte Geldkonto überwiesen wird. Die Summe muss 100 % ergeben.
+          allocation_total: Gesamtaufteilung
+          portability_note: Diese Auswahl verwendet IDs deiner Installation. Wenn ein Konto oder eine Kategorie nach einem Export nicht mehr existiert, greifen die Widgets automatisch auf passende verfügbare Daten zurück.
+          primary_credit_card: Hauptkarte für das Widget
+          save: Alltagsplan speichern
+          subtitle: Wähle die Daten für die neuen Widgets aus, ohne von Konto- oder Kategorienamen abhängig zu sein.
+          title: Alltagsplan des Dashboards
+          work_calendar: Agendrix-Arbeitskalender
+          work_calendar_hint: Sure summiert die Dauer der geplanten Schichten im Gehaltszeitraum und multipliziert sie mit deinem geschätzten Stundenbetrag. Fülle alle vier Felder aus, um dies zu aktivieren.
+          work_calendar_privacy: Behandle diesen öffentlichen Kalenderlink vertraulich – jeder mit dem Link kann möglicherweise deinen Arbeitsplan sehen.
+          work_calendar_url: Öffentlicher Agendrix-Kalender (.ics)
+          work_calendar_url_placeholder: https://app.agendrix.com/api/calendar/deine-kalender-id.ics
+      update:
+        cash_plan_invalid_allocation: Gehaltsaufteilungen müssen zwischen 0 % und 100 % liegen und zusammen genau 100 % ergeben.
+        cash_plan_invalid_calendar: Gib einen gültigen Agendrix-Kalender, Stundenbetrag, Periodenbeginn und eine gültige Verzögerung bis zum Zahltag ein – oder lass alle vier Felder leer.
+        cash_plan_invalid_schedule: Gib ein gültiges Gehaltsdatum und einen gültigen Betrag ein oder lass beide Felder leer.
+        cash_plan_saved: Die Einstellungen des Alltagsplans wurden gespeichert.
