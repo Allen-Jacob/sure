@@ -88,6 +88,22 @@ else
   json.transfer nil
 end
 
+# Split information lets clients present child transactions under the original
+# purchase without rendering the excluded parent as a third transaction.
+parent_entry = transaction.entry.parent_entry
+if parent_entry.present?
+  parent_amount_money = parent_entry.amount_money
+  parent_conversion_factor = parent_amount_money.currency.minor_unit_conversion
+  json.split_parent do
+    json.id parent_entry.transaction.id
+    json.name parent_entry.name
+    json.amount_cents((parent_amount_money.amount * parent_conversion_factor).round(0).to_i.abs)
+    json.currency parent_entry.currency
+  end
+else
+  json.split_parent nil
+end
+
 # Additional metadata
 json.created_at transaction.created_at.iso8601
 json.updated_at transaction.updated_at.iso8601
