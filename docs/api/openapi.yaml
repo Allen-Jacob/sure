@@ -4327,70 +4327,6 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
-  "/api/v1/goals":
-    get:
-      summary: List goals
-      tags:
-      - Goals
-      security:
-      - apiKeyAuth: []
-      parameters:
-      - name: page
-        in: query
-        required: false
-        schema:
-          type: integer
-      - name: per_page
-        in: query
-        required: false
-        schema:
-          type: integer
-      responses:
-        '200':
-          description: goals listed
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/GoalCollection"
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '403':
-          description: insufficient scope
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-  "/api/v1/goals/{id}":
-    parameters:
-    - name: id
-      in: path
-      required: true
-      schema:
-        type: string
-        format: uuid
-    get:
-      summary: Retrieve a goal
-      tags:
-      - Goals
-      security:
-      - apiKeyAuth: []
-      responses:
-        '200':
-          description: goal retrieved
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Goal"
-        '404':
-          description: goal not found
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
   "/api/v1/categories":
     get:
       summary: List categories
@@ -4895,6 +4831,70 @@ paths:
                 "$ref": "#/components/schemas/ErrorResponse"
         '403':
           description: insufficient scope
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v1/goals":
+    get:
+      summary: List goals
+      tags:
+      - Goals
+      security:
+      - apiKeyAuth: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: goals listed
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GoalCollection"
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '403':
+          description: insufficient scope
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v1/goals/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      summary: Retrieve a goal
+      tags:
+      - Goals
+      security:
+      - apiKeyAuth: []
+      responses:
+        '200':
+          description: goal retrieved
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Goal"
+        '404':
+          description: goal not found
           content:
             application/json:
               schema:
@@ -7866,6 +7866,64 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+    post:
+      summary: Create a transfer
+      tags:
+      - Transfers
+      security:
+      - apiKeyAuth: []
+      parameters: []
+      responses:
+        '201':
+          description: transfer created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/TransferDecision"
+        '403':
+          description: write scope required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '422':
+          description: invalid transfer attributes
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - transfer
+              properties:
+                transfer:
+                  type: object
+                  required:
+                  - from_account_id
+                  - to_account_id
+                  - date
+                  - amount
+                  properties:
+                    from_account_id:
+                      type: string
+                      format: uuid
+                    to_account_id:
+                      type: string
+                      format: uuid
+                    date:
+                      type: string
+                      format: date
+                    amount:
+                      type: string
+                      example: '120.50'
+                    exchange_rate:
+                      type: string
+                      nullable: true
+                      example: '1.37'
   "/api/v1/transfers/{id}":
     parameters:
     - name: id

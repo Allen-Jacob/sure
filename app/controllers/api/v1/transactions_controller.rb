@@ -5,8 +5,8 @@ class Api::V1::TransactionsController < Api::V1::BaseController
 
   # Ensure proper scope authorization for read vs write access
   before_action :ensure_read_scope, only: [ :index, :show ]
-  before_action :ensure_write_scope, only: [ :create, :update, :destroy ]
-  before_action :set_transaction, only: [ :show, :update, :destroy ]
+  before_action :ensure_write_scope, only: [ :create, :update, :destroy, :split ]
+  before_action :set_transaction, only: [ :show, :update, :destroy, :split ]
 
   def index
     family = current_resource_owner.family
@@ -16,6 +16,7 @@ class Api::V1::TransactionsController < Api::V1::BaseController
       .select(:id)
     transactions_query = family.transactions
       .joins(:entry).where(entries: { account_id: accessible_account_ids })
+      .merge(Entry.excluding_split_parents)
 
     # Apply filters
     transactions_query = apply_filters(transactions_query)
@@ -198,6 +199,62 @@ class Api::V1::TransactionsController < Api::V1::BaseController
     }, status: :internal_server_error
   end
 
+  def split
+    unless @transaction.splittable?
+      render json: {
+        error: "validation_failed",
+        message: "Transaction cannot be split"
+      }, status: :unprocessable_entity
+      return
+    end
+
+    splits = split_params.fetch(:splits, [])
+    if splits.size < 2
+      render json: {
+        error: "validation_failed",
+        message: "At least two split transactions are required"
+      }, status: :unprocessable_entity
+      return
+    end
+
+    if splits.any? { |item| item[:amount].blank? || item[:amount].to_d <= 0 }
+      render json: {
+        error: "validation_failed",
+        message: "Each split amount must be greater than zero"
+      }, status: :unprocessable_entity
+      return
+    end
+
+    category_ids = splits.filter_map { |item| item[:category_id].presence }.uniq
+    valid_category_ids = current_resource_owner.family.categories.where(id: category_ids).pluck(:id).map(&:to_s)
+    unless category_ids.map(&:to_s).all? { |id| valid_category_ids.include?(id) }
+      render json: {
+        error: "validation_failed",
+        message: "One or more categories are invalid"
+      }, status: :unprocessable_entity
+      return
+    end
+
+    direction = @entry.amount.negative? ? -1 : 1
+    child_entries = @entry.split!(splits.map do |item|
+      {
+        name: item[:name].presence || @entry.name,
+        amount: item[:amount].to_d.abs * direction,
+        category_id: item[:category_id].presence,
+        excluded: false
+      }
+    end)
+    @entry.sync_account_later
+    @transactions = child_entries.map(&:transaction)
+    render :split, status: :created
+  rescue ActiveRecord::RecordInvalid => e
+    render json: {
+      error: "validation_failed",
+      message: e.message,
+      errors: e.record.errors.full_messages
+    }, status: :unprocessable_entity
+  end
+
   private
 
     def set_transaction
@@ -312,6 +369,10 @@ class Api::V1::TransactionsController < Api::V1::BaseController
         :date, :amount, :name, :description, :notes, :currency,
         :category_id, :merchant_id, :nature, tag_ids: []
       )
+    end
+
+    def split_params
+      params.require(:split).permit(splits: [ :name, :amount, :category_id ])
     end
 
     def account_id_param
