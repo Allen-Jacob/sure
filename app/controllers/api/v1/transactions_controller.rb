@@ -27,7 +27,7 @@ class Api::V1::TransactionsController < Api::V1::BaseController
     # Include necessary associations for efficient queries
     transactions_query = transactions_query.includes(
       { entry: [ :account, { parent_entry: :entryable } ] },
-      :category, :merchant, :tags,
+      { category: :parent }, :merchant, :tags,
       transfer_as_outflow: { inflow_transaction: { entry: :account } },
       transfer_as_inflow: { outflow_transaction: { entry: :account } }
     ).reverse_chronological
@@ -131,8 +131,8 @@ class Api::V1::TransactionsController < Api::V1::BaseController
   end
 
   def update
-    if @entry.split_child?
-      render json: { error: "validation_failed", message: "Split child transactions cannot be edited directly. Use the split editor." }, status: :unprocessable_entity
+    if @entry.split_child? && split_child_financial_fields_changed?
+      render json: { error: "validation_failed", message: "Split child amount, date, and type cannot be changed directly." }, status: :unprocessable_entity
       return
     end
 
@@ -236,16 +236,26 @@ class Api::V1::TransactionsController < Api::V1::BaseController
     end
 
     direction = @entry.amount.negative? ? -1 : 1
-    child_entries = @entry.split!(splits.map do |item|
+    requested_splits = splits.map do |item|
       {
         name: item[:name].presence || @entry.name,
         amount: item[:amount].to_d.abs * direction,
         category_id: item[:category_id].presence,
         excluded: false
       }
-    end)
+    end
+    child_entries = Entry.transaction do
+      created_entries = @entry.split!(requested_splits)
+      created_entries.zip(requested_splits).each do |child, requested|
+        next if child.transaction.category_id.to_s == requested[:category_id].to_s
+
+        @entry.errors.add(:base, "A split category could not be saved")
+        raise ActiveRecord::RecordInvalid.new(@entry)
+      end
+      created_entries
+    end
     @entry.sync_account_later
-    @transactions = child_entries.map(&:transaction)
+    @transactions = child_entries.map { |child| child.transaction.reload }
     render :split, status: :created
   rescue ActiveRecord::RecordInvalid => e
     render json: {
@@ -437,6 +447,30 @@ class Api::V1::TransactionsController < Api::V1::BaseController
       params.dig(:transaction, :amount).present? ||
         params.dig(:transaction, :date).present? ||
         params.dig(:transaction, :nature).present?
+    end
+
+    def split_child_financial_fields_changed?
+      if transaction_params[:amount].present?
+        return true unless calculate_signed_amount.to_d == @entry.amount.to_d
+      end
+
+      if transaction_params[:date].present?
+        return true unless Date.parse(transaction_params[:date].to_s) == @entry.date
+      end
+
+      if transaction_params[:nature].present?
+        requested_nature = case transaction_params[:nature].downcase
+        when "income", "inflow" then "income"
+        when "expense", "outflow" then "expense"
+        else return true
+        end
+        current_nature = @entry.amount.negative? ? "income" : "expense"
+        return true unless requested_nature == current_nature
+      end
+
+      false
+    rescue Date::Error
+      true
     end
 
     def idempotency_key_requested?

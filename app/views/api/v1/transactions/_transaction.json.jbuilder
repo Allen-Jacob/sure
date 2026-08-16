@@ -35,6 +35,14 @@ if transaction.category.present?
     json.name transaction.category.name
     json.color transaction.category.color
     json.icon transaction.category.lucide_icon
+    if transaction.category.parent.present?
+      json.parent do
+        json.id transaction.category.parent.id
+        json.name transaction.category.parent.name
+      end
+    else
+      json.parent nil
+    end
   end
 else
   json.category nil
