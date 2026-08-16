@@ -854,6 +854,11 @@ end
     response_data = JSON.parse(response.body)
     assert_equal [ "Groceries", "Household" ], response_data["transactions"].map { |item| item["name"] }
     assert_equal [ 5000, 2550 ], response_data["transactions"].map { |item| item["amount_cents"] }
+    response_data["transactions"].each do |item|
+      assert_equal entry.transaction.id, item.dig("split_parent", "id")
+      assert_equal "Mixed purchase", item.dig("split_parent", "name")
+      assert_equal 7550, item.dig("split_parent", "amount_cents")
+    end
     assert entry.reload.split_parent?
     assert entry.excluded?
 
