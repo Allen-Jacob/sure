@@ -838,8 +838,8 @@ end
       date: Date.current,
       entryable: Transaction.new
     )
-    groceries = @family.categories.create!(name: "Split groceries", color: "#22C55E")
-    household = @family.categories.create!(name: "Split household", color: "#6366F1")
+    groceries = @family.categories.create!(name: "Split groceries", color: "#22C55E", lucide_icon: "shopping-bag")
+    household = @family.categories.create!(name: "Split household", color: "#6366F1", lucide_icon: "home")
 
     post split_api_v1_transaction_url(entry.transaction), params: {
       split: {
@@ -854,6 +854,7 @@ end
     response_data = JSON.parse(response.body)
     assert_equal [ "Groceries", "Household" ], response_data["transactions"].map { |item| item["name"] }
     assert_equal [ 5000, 2550 ], response_data["transactions"].map { |item| item["amount_cents"] }
+    assert_equal [ groceries.id, household.id ], response_data["transactions"].map { |item| item.dig("category", "id") }
     response_data["transactions"].each do |item|
       assert_equal entry.transaction.id, item.dig("split_parent", "id")
       assert_equal "Mixed purchase", item.dig("split_parent", "name")
@@ -889,6 +890,59 @@ end
 
     assert_response :unprocessable_entity
     assert_not entry.reload.split_parent?
+  end
+
+  test "should allow changing the category of a split child" do
+    entry = @account.entries.create!(
+      name: "Pizza",
+      amount: 57.28,
+      currency: "USD",
+      date: Date.current,
+      entryable: Transaction.new
+    )
+    food = @family.categories.create!(name: "Split food", color: "#22C55E", lucide_icon: "utensils")
+    advance = @family.categories.create!(name: "Split advance", color: "#64748B", lucide_icon: "hand-coins")
+    children = entry.split!([
+      { name: "Pizza", amount: 10.28, category_id: food.id },
+      { name: "Pizza", amount: 47.00, category_id: food.id }
+    ])
+    child = children.last
+
+    patch api_v1_transaction_url(child.transaction), params: {
+      transaction: {
+        name: "Pizza",
+        amount: "47.00",
+        date: Date.current.iso8601,
+        nature: "expense",
+        category_id: advance.id
+      }
+    }, headers: api_headers(@api_key)
+
+    assert_response :success
+    assert_equal advance.id, child.transaction.reload.category_id
+    assert_equal 47.to_d, child.reload.amount
+  end
+
+  test "should reject changing the amount of a split child" do
+    entry = @account.entries.create!(
+      name: "Pizza",
+      amount: 57.28,
+      currency: "USD",
+      date: Date.current,
+      entryable: Transaction.new
+    )
+    children = entry.split!([
+      { name: "Pizza", amount: 10.28 },
+      { name: "Pizza", amount: 47.00 }
+    ])
+    child = children.last
+
+    patch api_v1_transaction_url(child.transaction), params: {
+      transaction: { amount: "46.00", nature: "expense" }
+    }, headers: api_headers(@api_key)
+
+    assert_response :unprocessable_entity
+    assert_equal 47.to_d, child.reload.amount
   end
 
   test "should reject split with read-only API key" do
