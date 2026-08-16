@@ -164,6 +164,89 @@ class Api::V1::TransfersControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes transfer_ids, @transfer.id
   end
 
+  test "creates a transfer between writable family accounts" do
+    read_write_key = create_read_write_key
+
+    assert_difference("Transfer.count", 1) do
+      post api_v1_transfers_url,
+           params: {
+             transfer: {
+               from_account_id: @account.id,
+               to_account_id: @destination_account.id,
+               date: "2026-08-15",
+               amount: "120.50"
+             }
+           },
+           headers: api_headers(read_write_key),
+           as: :json
+    end
+
+    assert_response :created
+    response_data = JSON.parse(response.body)
+    created = Transfer.find(response_data.fetch("id"))
+    assert_equal @account, created.from_account
+    assert_equal @destination_account, created.to_account
+    assert_equal Date.parse("2026-08-15"), created.date
+    assert_equal 120.50, created.outflow_transaction.entry.amount
+    assert_equal(-120.50, created.inflow_transaction.entry.amount)
+  end
+
+  test "requires write scope to create a transfer" do
+    post api_v1_transfers_url,
+         params: {
+           transfer: {
+             from_account_id: @account.id,
+             to_account_id: @destination_account.id,
+             date: "2026-08-15",
+             amount: "25"
+           }
+         },
+         headers: api_headers(@api_key),
+         as: :json
+
+    assert_response :forbidden
+    assert_equal "insufficient_scope", JSON.parse(response.body)["error"]
+  end
+
+  test "rejects invalid transfer attributes" do
+    read_write_key = create_read_write_key
+
+    post api_v1_transfers_url,
+         params: {
+           transfer: {
+             from_account_id: @account.id,
+             to_account_id: @destination_account.id,
+             date: "15-08-2026",
+             amount: "not-a-number"
+           }
+         },
+         headers: api_headers(read_write_key),
+         as: :json
+
+    assert_response :unprocessable_entity
+    assert_equal "validation_failed", JSON.parse(response.body)["error"]
+  end
+
+  test "does not create transfers using another family's account" do
+    read_write_key = create_read_write_key
+
+    assert_no_difference("Transfer.count") do
+      post api_v1_transfers_url,
+           params: {
+             transfer: {
+               from_account_id: @account.id,
+               to_account_id: @other_transfer.to_account.id,
+               date: "2026-08-15",
+               amount: "25"
+             }
+           },
+           headers: api_headers(read_write_key),
+           as: :json
+    end
+
+    assert_response :not_found
+  end
+
   test "requires authentication" do
     get api_v1_transfers_url
 
@@ -203,5 +286,15 @@ class Api::V1::TransfersControllerTest < ActionDispatch::IntegrationTest
 
     def api_headers(api_key)
       { "X-Api-Key" => api_key.display_key }
+    end
+
+    def create_read_write_key
+      ApiKey.create!(
+        user: @user,
+        name: "Test Transfer Write Key #{SecureRandom.hex(4)}",
+        scopes: [ "read_write" ],
+        source: "mobile",
+        display_key: "test_transfer_write_#{SecureRandom.hex(8)}"
+      )
     end
 end

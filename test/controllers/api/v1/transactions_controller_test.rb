@@ -830,6 +830,75 @@ end
     assert_empty queries.grep(/SELECT "accounts"\.\* FROM "accounts" WHERE "accounts"\."id" =/)
   end
 
+  test "should split a transaction into independent child transactions" do
+    entry = @account.entries.create!(
+      name: "Mixed purchase",
+      amount: 75.50,
+      currency: "USD",
+      date: Date.current,
+      entryable: Transaction.new
+    )
+    groceries = @family.categories.create!(name: "Split groceries", color: "#22C55E")
+    household = @family.categories.create!(name: "Split household", color: "#6366F1")
+
+    post split_api_v1_transaction_url(entry.transaction), params: {
+      split: {
+        splits: [
+          { name: "Groceries", amount: "50.00", category_id: groceries.id },
+          { name: "Household", amount: "25.50", category_id: household.id }
+        ]
+      }
+    }, headers: api_headers(@api_key)
+
+    assert_response :created
+    response_data = JSON.parse(response.body)
+    assert_equal [ "Groceries", "Household" ], response_data["transactions"].map { |item| item["name"] }
+    assert_equal [ 5000, 2550 ], response_data["transactions"].map { |item| item["amount_cents"] }
+    assert entry.reload.split_parent?
+    assert entry.excluded?
+
+    get api_v1_transactions_url, params: { per_page: 200 }, headers: api_headers(@api_key)
+    assert_response :success
+    ids = JSON.parse(response.body)["transactions"].map { |item| item["id"] }
+    assert_not_includes ids, entry.transaction.id
+    response_data["transactions"].each { |item| assert_includes ids, item["id"] }
+  end
+
+  test "should reject split amounts that do not match the original transaction" do
+    entry = @account.entries.create!(
+      name: "Mixed purchase",
+      amount: 75.50,
+      currency: "USD",
+      date: Date.current,
+      entryable: Transaction.new
+    )
+
+    post split_api_v1_transaction_url(entry.transaction), params: {
+      split: {
+        splits: [
+          { name: "First", amount: "50.00" },
+          { name: "Second", amount: "20.00" }
+        ]
+      }
+    }, headers: api_headers(@api_key)
+
+    assert_response :unprocessable_entity
+    assert_not entry.reload.split_parent?
+  end
+
+  test "should reject split with read-only API key" do
+    post split_api_v1_transaction_url(@transaction), params: {
+      split: {
+        splits: [
+          { name: "First", amount: "1.00" },
+          { name: "Second", amount: "1.00" }
+        ]
+      }
+    }, headers: api_headers(@read_only_api_key)
+
+    assert_response :forbidden
+  end
+
   private
 
     def api_headers(api_key)
