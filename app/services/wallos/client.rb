@@ -26,8 +26,8 @@ module Wallos
 
       def request_json(path)
         uri = @base_uri.dup
-        uri.path = [ @base_uri.path.to_s.sub(%r{/+\z}, ""), path ].reject(&:blank?).join("/")
-        uri.path = "/#{uri.path}" unless uri.path.start_with?("/")
+        request_path = [ @base_uri.path.to_s.sub(%r{/+\z}, ""), path ].reject(&:blank?).join("/")
+        uri.path = request_path.start_with?("/") ? request_path : "/#{request_path}"
         request = Net::HTTP::Post.new(uri)
         request["Accept"] = "application/json"
         request.set_form_data(api_key: @api_key)

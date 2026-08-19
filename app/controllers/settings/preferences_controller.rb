@@ -9,6 +9,8 @@ class Settings::PreferencesController < ApplicationController
   def show
     @user = Current.user
     load_cash_plan_options
+    @family_members = Current.family.users.where.not(id: @user.id).where(active: true)
+    @budget_shares = @user.budget_shares_given.index_by(&:viewer_id)
   end
 
   # Writes per-user preferences stored in the JSONB `users.preferences` column.
