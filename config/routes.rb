@@ -508,6 +508,10 @@ Rails.application.routes.draw do
     end
   end
 
+  resource :wallos_connection, only: %i[create update destroy] do
+    post :sync
+  end
+
   resources :insights, only: %i[index] do
     collection do
       post :refresh

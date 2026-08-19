@@ -517,7 +517,10 @@ class Family::DataImporter
           manual: boolean_import_value(data, "manual", default: false),
           expected_amount_min: data["expected_amount_min"]&.to_d,
           expected_amount_max: data["expected_amount_max"]&.to_d,
-          expected_amount_avg: data["expected_amount_avg"]&.to_d
+          expected_amount_avg: data["expected_amount_avg"]&.to_d,
+          source: data["source"],
+          source_id: data["source_id"],
+          source_metadata: data["source_metadata"] || {}
         )
 
         recurring_transaction.save!

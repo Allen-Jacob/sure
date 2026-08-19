@@ -1,0 +1,66 @@
+<div class="bg-container rounded-xl shadow-border-xs p-4 space-y-4">
+  <div class="flex items-start gap-3">
+    <%= render DS::FilledIcon.new(icon: "repeat", size: "md", rounded: true) %>
+    <div>
+      <p class="text-sm font-medium text-primary"><%= t("recurring_transactions.wallos.title") %></p>
+      <p class="text-xs text-secondary"><%= t("recurring_transactions.wallos.description") %></p>
+    </div>
+  </div>
+
+  <% if @wallos_accounts.empty? %>
+    <%= render DS::Alert.new(message: t("recurring_transactions.wallos.no_accounts"), variant: :warning) %>
+  <% else %>
+    <% persisted = @wallos_connection.persisted? %>
+    <%= styled_form_with model: @wallos_connection,
+                         url: persisted ? wallos_connection_path : wallos_connection_path,
+                         method: persisted ? :patch : :post,
+                         class: "space-y-3" do |form| %>
+      <%= form.text_field :base_url,
+                          label: t("recurring_transactions.wallos.base_url"),
+                          placeholder: "http://wallos:80" %>
+      <%= form.text_field :api_key,
+                          type: :password,
+                          value: "",
+                          label: t("recurring_transactions.wallos.api_key"),
+                          placeholder: persisted ? t("recurring_transactions.wallos.api_key_unchanged") : nil,
+                          required: !persisted %>
+      <%= form.collection_select :account_id,
+                                 @wallos_accounts,
+                                 :id,
+                                 :name,
+                                 { label: t("recurring_transactions.wallos.paid_by"), prompt: t("recurring_transactions.wallos.select_account") },
+                                 required: true %>
+
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <p class="text-xs text-secondary">
+          <% if @wallos_connection.last_synced_at? %>
+            <%= t("recurring_transactions.wallos.last_synced", time: time_ago_in_words(@wallos_connection.last_synced_at)) %>
+          <% else %>
+            <%= t("recurring_transactions.wallos.never_synced") %>
+          <% end %>
+        </p>
+        <%= form.submit persisted ? t("recurring_transactions.wallos.save") : t("recurring_transactions.wallos.connect") %>
+      </div>
+    <% end %>
+
+    <% if persisted %>
+      <div class="flex justify-end gap-2 border-t border-divider pt-3">
+        <%= render DS::Button.new(
+          text: t("recurring_transactions.wallos.disconnect"),
+          icon: "unlink",
+          variant: "outline_destructive",
+          href: wallos_connection_path,
+          method: :delete,
+          confirm: t("recurring_transactions.wallos.confirm_disconnect")
+        ) %>
+        <%= render DS::Button.new(
+          text: t("recurring_transactions.wallos.sync_now"),
+          icon: "refresh-cw",
+          variant: "primary",
+          href: sync_wallos_connection_path,
+          method: :post
+        ) %>
+      </div>
+    <% end %>
+  <% end %>
+</div>

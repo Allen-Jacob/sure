@@ -4,9 +4,11 @@ class RecurringTransactionsController < ApplicationController
   def index
     @recurring_transactions = Current.family.recurring_transactions
                                     .accessible_by(Current.user)
-                                    .includes(:merchant)
+                                    .includes(:merchant, :account)
                                     .order(status: :asc, next_expected_date: :asc)
     @family = Current.family
+    @wallos_connection = Current.family.wallos_connection || Current.family.build_wallos_connection
+    @wallos_accounts = Current.user.accessible_accounts.visible.alphabetically
   end
 
   def update_settings

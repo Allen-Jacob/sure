@@ -42,6 +42,34 @@ fr:
         et afficher les transactions projetées à venir.
       enable_label: Activer les transactions récurrentes
     settings_updated: Paramètres des transactions récurrentes mis à jour
+    wallos:
+      title: Intégration Wallos
+      source_badge: Wallos
+      description: Importez les abonnements Wallos dans Sure et associez-les au compte qui les paie.
+      base_url: URL de Wallos
+      api_key: Clé API
+      api_key_unchanged: Laissez vide pour conserver la clé actuelle
+      paid_by: Payé par
+      paid_by_value: "Payé par %{account}"
+      payer_value: "Payeur Wallos : %{payer}"
+      select_account: Sélectionner un compte
+      no_accounts: Ajoutez un compte dans Sure avant de connecter Wallos.
+      connect: Connecter et importer
+      save: Enregistrer les réglages
+      sync_now: Synchroniser maintenant
+      disconnect: Déconnecter
+      confirm_disconnect: Déconnecter Wallos ? Les abonnements importés seront conservés dans Sure.
+      last_synced: "Dernière synchronisation il y a %{time}"
+      never_synced: Pas encore synchronisé
+      connected:
+        one: Wallos connecté et 1 abonnement importé
+        other: Wallos connecté et %{count} abonnements importés
+      synced:
+        one: 1 abonnement Wallos importé
+        other: "%{count} abonnements Wallos importés"
+      settings_updated: Réglages Wallos mis à jour
+      disconnected: Wallos déconnecté. Les abonnements importés ont été conservés.
+      not_connected: Wallos n'est pas connecté.
     status:
       active: Actif
       inactive: Inactif

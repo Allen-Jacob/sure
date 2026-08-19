@@ -18,6 +18,7 @@ class RecurringTransaction < ApplicationRecord
   validates :expected_day_of_month, presence: true, numericality: { greater_than: 0, less_than_or_equal_to: 31 }
   validates :status, presence: true, inclusion: { in: statuses.keys }
   validates :occurrence_count, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validates :source_id, uniqueness: { scope: [ :family_id, :source ] }, allow_nil: true
   validate :merchant_or_name_present
   validate :amount_variance_consistency
   validate :transfer_endpoints_consistent

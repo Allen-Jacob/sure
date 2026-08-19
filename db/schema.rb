@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_08_12_000000) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_19_010001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -1629,13 +1629,17 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_12_000000) do
     t.decimal "expected_amount_avg", precision: 19, scale: 4
     t.uuid "account_id"
     t.uuid "destination_account_id"
+    t.string "source"
+    t.string "source_id"
+    t.jsonb "source_metadata", default: {}, null: false
     t.index ["account_id"], name: "index_recurring_transactions_on_account_id"
     t.index ["destination_account_id"], name: "index_recurring_transactions_on_destination_account_id"
     t.index ["family_id", "account_id", "destination_account_id", "merchant_id", "amount", "currency"], name: "idx_recurring_txns_pair_merchant", unique: true, where: "((destination_account_id IS NOT NULL) AND (merchant_id IS NOT NULL))"
     t.index ["family_id", "account_id", "destination_account_id", "name", "amount", "currency"], name: "idx_recurring_txns_pair_name", unique: true, where: "((destination_account_id IS NOT NULL) AND (name IS NOT NULL) AND (merchant_id IS NULL))"
     t.index ["family_id", "account_id", "merchant_id", "amount", "currency"], name: "idx_recurring_txns_acct_merchant", unique: true, where: "((merchant_id IS NOT NULL) AND (destination_account_id IS NULL))"
-    t.index ["family_id", "account_id", "name", "amount", "currency"], name: "idx_recurring_txns_acct_name", unique: true, where: "((name IS NOT NULL) AND (merchant_id IS NULL) AND (destination_account_id IS NULL))"
+    t.index ["family_id", "account_id", "name", "amount", "currency"], name: "idx_recurring_txns_acct_name", unique: true, where: "((name IS NOT NULL) AND (merchant_id IS NULL) AND (destination_account_id IS NULL) AND (source IS NULL))"
     t.index ["family_id", "status"], name: "index_recurring_transactions_on_family_id_and_status"
+    t.index ["family_id", "source", "source_id"], name: "idx_recurring_txns_on_external_source", unique: true, where: "((source IS NOT NULL) AND (source_id IS NOT NULL))"
     t.index ["family_id"], name: "index_recurring_transactions_on_family_id"
     t.index ["merchant_id"], name: "index_recurring_transactions_on_merchant_id"
     t.index ["next_expected_date"], name: "index_recurring_transactions_on_next_expected_date"
@@ -2272,6 +2276,18 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_12_000000) do
     t.string "subtype"
   end
 
+  create_table "wallos_connections", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "family_id", null: false
+    t.uuid "account_id", null: false
+    t.string "base_url", null: false
+    t.text "api_key", null: false
+    t.datetime "last_synced_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_wallos_connections_on_account_id"
+    t.index ["family_id"], name: "index_wallos_connections_on_family_id", unique: true
+  end
+
   create_table "webauthn_credentials", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "user_id", null: false
     t.string "nickname", null: false
@@ -2455,6 +2471,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_12_000000) do
   add_foreign_key "users", "accounts", column: "default_account_id", on_delete: :nullify
   add_foreign_key "users", "chats", column: "last_viewed_chat_id"
   add_foreign_key "users", "families"
+  add_foreign_key "wallos_connections", "accounts", on_delete: :cascade
+  add_foreign_key "wallos_connections", "families"
   add_foreign_key "webauthn_credentials", "users"
   add_foreign_key "wise_accounts", "wise_items", on_delete: :cascade
   add_foreign_key "wise_items", "families"

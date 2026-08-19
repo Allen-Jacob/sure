@@ -16,6 +16,34 @@ en:
       enable_label: Enable Recurring Transactions
       enable_description: Automatically detect recurring transaction patterns and show upcoming projected transactions.
     settings_updated: Recurring transactions settings updated
+    wallos:
+      title: Wallos integration
+      source_badge: Wallos
+      description: Import Wallos subscriptions into Sure and assign them to the account that pays for them.
+      base_url: Wallos URL
+      api_key: API key
+      api_key_unchanged: Leave blank to keep the current key
+      paid_by: Paid by
+      paid_by_value: "Paid by %{account}"
+      payer_value: "Wallos payer: %{payer}"
+      select_account: Select an account
+      no_accounts: Add an account in Sure before connecting Wallos.
+      connect: Connect and import
+      save: Save settings
+      sync_now: Sync now
+      disconnect: Disconnect
+      confirm_disconnect: Disconnect Wallos? Imported subscriptions will be kept in Sure.
+      last_synced: "Last synced %{time} ago"
+      never_synced: Not synced yet
+      connected:
+        one: Connected Wallos and imported 1 subscription
+        other: Connected Wallos and imported %{count} subscriptions
+      synced:
+        one: Imported 1 Wallos subscription
+        other: Imported %{count} Wallos subscriptions
+      settings_updated: Wallos settings updated
+      disconnected: Wallos disconnected. Imported subscriptions were kept.
+      not_connected: Wallos is not connected.
     info:
       title: Automatic Pattern Detection
       manual_description: You can manually identify patterns or clean up stale recurring transactions using the buttons above.

@@ -558,6 +558,9 @@ class Family::DataExporter
         expected_amount_min: recurring_transaction.expected_amount_min,
         expected_amount_max: recurring_transaction.expected_amount_max,
         expected_amount_avg: recurring_transaction.expected_amount_avg,
+        source: recurring_transaction.source,
+        source_id: recurring_transaction.source_id,
+        source_metadata: recurring_transaction.source_metadata,
         created_at: recurring_transaction.created_at,
         updated_at: recurring_transaction.updated_at
       }

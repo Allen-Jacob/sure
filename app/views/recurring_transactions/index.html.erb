@@ -39,6 +39,8 @@
     </div>
   </div>
 
+  <%= render "wallos_settings" %>
+
   <% unless @family.recurring_transactions_disabled? %>
     <div class="p-4 bg-container-inset border border-secondary rounded-lg">
       <div class="flex items-start gap-2">
@@ -127,7 +129,23 @@
                         <%= t("recurring_transactions.badges.manual") %>
                       </span>
                     <% end %>
+                    <% if recurring_transaction.source == "wallos" %>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-container-inset text-secondary">
+                        <%= t("recurring_transactions.wallos.source_badge") %>
+                      </span>
+                    <% end %>
                   </div>
+                  <% if recurring_transaction.account.present? %>
+                    <p class="text-xs text-secondary mt-1">
+                      <%= t("recurring_transactions.wallos.paid_by_value", account: recurring_transaction.account.name) %>
+                      <% if recurring_transaction.source_metadata["payer"].present? %>
+                        · <%= t("recurring_transactions.wallos.payer_value", payer: recurring_transaction.source_metadata["payer"]) %>
+                      <% end %>
+                      <% if recurring_transaction.source_metadata["payment_method"].present? %>
+                        · <%= recurring_transaction.source_metadata["payment_method"] %>
+                      <% end %>
+                    </p>
+                  <% end %>
                 </td>
                 <% if recurring_transaction.transfer? %>
                   <td class="py-3 px-2 text-sm font-medium privacy-sensitive text-secondary">
