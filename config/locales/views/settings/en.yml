@@ -169,6 +169,39 @@ en:
         date_format: Date format
         general_subtitle: Configure your preferences
         general_title: General
+        cash_plan:
+          automatic: Automatic detection
+          cash_accounts: Cash accounts to include
+          credit_cards: Credit cards to include
+          expected_pay_amount: Expected amount (%{currency})
+          hourly_pay_rate: Estimated amount per scheduled hour (%{currency})
+          manual_schedule: Manual next paycheck (optional)
+          manual_schedule_hint: Enter both fields to override the Agendrix calendar and automatic estimate. Leave both empty to use the configured source.
+          next_pay_date: Next paycheck date
+          no_cash_accounts: No accessible checking or savings account uses the base currency.
+          no_credit_cards: No accessible credit card uses the base currency.
+          pay_cycle_days: Pay frequency
+          pay_cycle_days_option:
+            one: Every day
+            other: Every %{count} days
+          pay_period_anchor_date: Start of a known pay period
+          pay_period_hint: For example, use August 2 with a 14-day frequency and 5 days after period end for an August 2–15 period paid on August 20.
+          payday_offset_days: Days from period end to payday
+          payroll_categories: Payroll income categories
+          payroll_categories_hint: Select the categories used by your instance. With no selection, Sure automatically recognizes common payroll labels.
+          paycheck_allocation: Next paycheck allocation
+          paycheck_allocation_hint: Choose the percentage sent to each selected cash account. The total must equal 100%.
+          allocation_total: Total allocation
+          portability_note: These choices use IDs from your instance. If an account or category no longer exists after an export, the widgets automatically fall back to compatible accessible data.
+          primary_credit_card: Main card for the widget
+          save: Save cash plan
+          subtitle: Choose the data used by the new widgets without depending on your account or category names.
+          title: Dashboard cash plan
+          work_calendar: Agendrix work calendar
+          work_calendar_hint: Sure totals the scheduled shift durations in the pay period and multiplies them by your estimated hourly amount. Fill all four fields to enable it.
+          work_calendar_privacy: Treat this public calendar link as private—anyone with it may be able to see your work schedule.
+          work_calendar_url: Public Agendrix calendar (.ics)
+          work_calendar_url_placeholder: https://app.agendrix.com/api/calendar/your-calendar-id.ics
         default_period: Default Period
         default_account_order: Default Account Order
         language: Language
@@ -218,6 +251,11 @@ en:
         preview:
           title: Enable preview features
           description: Opt in to in-progress features tagged preview or canary.
+      update:
+        cash_plan_invalid_allocation: Paycheck allocations must be between 0% and 100% and total exactly 100%.
+        cash_plan_invalid_calendar: Enter a valid Agendrix calendar, hourly amount, pay-period start, and payday delay—or leave all four fields empty.
+        cash_plan_invalid_schedule: Enter a valid paycheck date and amount, or leave both fields empty.
+        cash_plan_saved: Cash plan settings were saved.
     budget_shares:
       update:
         success: Budget sharing settings updated

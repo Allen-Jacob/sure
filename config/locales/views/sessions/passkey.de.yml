@@ -1,0 +1,6 @@
+---
+de:
+  sessions:
+    new:
+      passkey_button: Mit einem Passkey anmelden
+      passkey_unsupported: Dieser Browser unterstützt keine Passkeys.

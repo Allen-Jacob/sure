@@ -603,6 +603,20 @@ class UserTest < ActiveSupport::TestCase
     assert_equal "full", @user.dashboard_section_width("net_worth_chart")
   end
 
+  test "cash plan settings replace only the cash plan preference" do
+    @user.update!(preferences: { "hidden_sections" => { "cash_plan_budget" => true } })
+
+    @user.update_dashboard_cash_plan_settings({
+      "depository_account_ids" => [ "account-id" ],
+      "pay_cycle_days" => 14
+    })
+    @user.reload
+
+    assert_equal [ "account-id" ], @user.dashboard_cash_plan_settings["depository_account_ids"]
+    assert_equal 14, @user.dashboard_cash_plan_settings["pay_cycle_days"]
+    assert @user.dashboard_section_hidden?("cash_plan_budget")
+  end
+
   test "handles empty preferences gracefully for dashboard methods" do
     @user.update!(preferences: {})
 
@@ -610,8 +624,29 @@ class UserTest < ActiveSupport::TestCase
     assert_not @user.dashboard_section_collapsed?("net_worth_chart"),
       "Should return false when collapsed_sections key is missing"
 
+    assert_not @user.dashboard_section_hidden?("cash_plan_budget"),
+      "Should return false when hidden_sections key is missing"
+
     # dashboard_section_order should return default order when key is missing
-    assert_equal %w[insights_feed cashflow_sankey outflows_donut net_worth_chart balance_sheet],
+    assert_equal %w[
+      insights_feed
+      cash_plan_available
+      cash_plan_paycheck
+      cash_plan_budget
+      cash_plan_spending
+      cash_plan_credit_card
+      cash_plan_allocation
+      cash_plan_goals
+      cash_plan_purchases
+      cash_plan_categories
+      cash_plan_review
+      money_flow
+      outflows_donut
+      net_worth_chart
+      balance_sheet
+      investment_summary
+      cashflow_sankey
+    ],
       @user.dashboard_section_order,
       "Should return default order when section_order key is missing"
 

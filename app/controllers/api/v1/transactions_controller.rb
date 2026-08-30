@@ -5,8 +5,8 @@ class Api::V1::TransactionsController < Api::V1::BaseController
 
   # Ensure proper scope authorization for read vs write access
   before_action :ensure_read_scope, only: [ :index, :show ]
-  before_action :ensure_write_scope, only: [ :create, :update, :destroy ]
-  before_action :set_transaction, only: [ :show, :update, :destroy ]
+  before_action :ensure_write_scope, only: [ :create, :update, :destroy, :split ]
+  before_action :set_transaction, only: [ :show, :update, :destroy, :split ]
 
   def index
     family = current_resource_owner.family
@@ -16,6 +16,7 @@ class Api::V1::TransactionsController < Api::V1::BaseController
       .select(:id)
     transactions_query = family.transactions
       .joins(:entry).where(entries: { account_id: accessible_account_ids })
+      .merge(Entry.excluding_split_parents)
 
     # Apply filters
     transactions_query = apply_filters(transactions_query)
@@ -25,8 +26,8 @@ class Api::V1::TransactionsController < Api::V1::BaseController
 
     # Include necessary associations for efficient queries
     transactions_query = transactions_query.includes(
-      { entry: :account },
-      :category, :merchant, :tags,
+      { entry: [ :account, { parent_entry: :entryable } ] },
+      { category: :parent }, :merchant, :tags,
       transfer_as_outflow: { inflow_transaction: { entry: :account } },
       transfer_as_inflow: { outflow_transaction: { entry: :account } }
     ).reverse_chronological
@@ -131,8 +132,8 @@ class Api::V1::TransactionsController < Api::V1::BaseController
   end
 
   def update
-    if @entry.split_child?
-      render json: { error: "validation_failed", message: "Split child transactions cannot be edited directly. Use the split editor." }, status: :unprocessable_entity
+    if @entry.split_child? && split_child_financial_fields_changed?
+      render json: { error: "validation_failed", message: "Split child amount, date, and type cannot be changed directly." }, status: :unprocessable_entity
       return
     end
 
@@ -197,6 +198,72 @@ class Api::V1::TransactionsController < Api::V1::BaseController
       error: "internal_server_error",
       message: "An unexpected error occurred"
     }, status: :internal_server_error
+  end
+
+  def split
+    unless @transaction.splittable?
+      render json: {
+        error: "validation_failed",
+        message: "Transaction cannot be split"
+      }, status: :unprocessable_entity
+      return
+    end
+
+    splits = split_params.fetch(:splits, [])
+    if splits.size < 2
+      render json: {
+        error: "validation_failed",
+        message: "At least two split transactions are required"
+      }, status: :unprocessable_entity
+      return
+    end
+
+    if splits.any? { |item| item[:amount].blank? || item[:amount].to_d <= 0 }
+      render json: {
+        error: "validation_failed",
+        message: "Each split amount must be greater than zero"
+      }, status: :unprocessable_entity
+      return
+    end
+
+    category_ids = splits.filter_map { |item| item[:category_id].presence }.uniq
+    valid_category_ids = current_resource_owner.family.categories.where(id: category_ids).pluck(:id).map(&:to_s)
+    unless category_ids.map(&:to_s).all? { |id| valid_category_ids.include?(id) }
+      render json: {
+        error: "validation_failed",
+        message: "One or more categories are invalid"
+      }, status: :unprocessable_entity
+      return
+    end
+
+    direction = @entry.amount.negative? ? -1 : 1
+    requested_splits = splits.map do |item|
+      {
+        name: item[:name].presence || @entry.name,
+        amount: item[:amount].to_d.abs * direction,
+        category_id: item[:category_id].presence,
+        excluded: false
+      }
+    end
+    child_entries = Entry.transaction do
+      created_entries = @entry.split!(requested_splits)
+      created_entries.zip(requested_splits).each do |child, requested|
+        next if child.transaction.category_id.to_s == requested[:category_id].to_s
+
+        @entry.errors.add(:base, "A split category could not be saved")
+        raise ActiveRecord::RecordInvalid.new(@entry)
+      end
+      created_entries
+    end
+    @entry.sync_account_later
+    @transactions = child_entries.map { |child| child.transaction.reload }
+    render :split, status: :created
+  rescue ActiveRecord::RecordInvalid => e
+    render json: {
+      error: "validation_failed",
+      message: e.message,
+      errors: e.record.errors.full_messages
+    }, status: :unprocessable_entity
   end
 
   private
@@ -325,6 +392,10 @@ class Api::V1::TransactionsController < Api::V1::BaseController
       ActiveModel::Type::Boolean.new.cast(transaction_params[:user_modified])
     end
 
+    def split_params
+      params.require(:split).permit(splits: [ :name, :amount, :category_id ])
+    end
+
     def account_id_param
       params.dig(:transaction, :account_id).presence
     end
@@ -352,25 +423,29 @@ class Api::V1::TransactionsController < Api::V1::BaseController
     end
 
     def entry_params_for_update
-      entry_params = {
-        name: transaction_params[:name] || transaction_params[:description],
-        date: transaction_params[:date],
-        notes: transaction_params[:notes],
-        entryable_attributes: {
-          id: @entry.entryable_id,
-          category_id: transaction_params[:category_id],
-          merchant_id: transaction_params[:merchant_id]
-          # Note: tag_ids handled separately in update action to distinguish
-          # "not provided" from "explicitly set to empty"
-        }.compact_blank
-      }
+      entryable_attributes = { id: @entry.entryable_id }
+      if transaction_params.key?(:category_id)
+        entryable_attributes[:category_id] = transaction_params[:category_id].presence
+      end
+      if transaction_params.key?(:merchant_id)
+        entryable_attributes[:merchant_id] = transaction_params[:merchant_id].presence
+      end
+
+      # Preserve omitted values, while retaining explicit nulls used by native
+      # clients to clear optional fields.
+      entry_params = { entryable_attributes: entryable_attributes }
+      if transaction_params.key?(:name) || transaction_params.key?(:description)
+        entry_params[:name] = transaction_params[:name] || transaction_params[:description]
+      end
+      entry_params[:date] = transaction_params[:date] if transaction_params.key?(:date)
+      entry_params[:notes] = transaction_params[:notes] if transaction_params.key?(:notes)
 
       # Only update amount if provided
       if transaction_params[:amount].present?
         entry_params[:amount] = calculate_signed_amount
       end
 
-      entry_params.compact
+      entry_params
     end
 
     # Check if tag_ids was explicitly provided in the request.
@@ -383,6 +458,30 @@ class Api::V1::TransactionsController < Api::V1::BaseController
       params.dig(:transaction, :amount).present? ||
         params.dig(:transaction, :date).present? ||
         params.dig(:transaction, :nature).present?
+    end
+
+    def split_child_financial_fields_changed?
+      if transaction_params[:amount].present?
+        return true unless calculate_signed_amount.to_d == @entry.amount.to_d
+      end
+
+      if transaction_params[:date].present?
+        return true unless Date.parse(transaction_params[:date].to_s) == @entry.date
+      end
+
+      if transaction_params[:nature].present?
+        requested_nature = case transaction_params[:nature].downcase
+        when "income", "inflow" then "income"
+        when "expense", "outflow" then "expense"
+        else return true
+        end
+        current_nature = @entry.amount.negative? ? "income" : "expense"
+        return true unless requested_nature == current_nature
+      end
+
+      false
+    rescue Date::Error
+      true
     end
 
     def idempotency_key_requested?

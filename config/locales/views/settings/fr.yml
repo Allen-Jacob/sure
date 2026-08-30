@@ -149,6 +149,39 @@ fr:
           read_write: Peut modifier
         budget_subtitle: Configurez le fonctionnement de vos budgets
         budget_title: Budget
+        cash_plan:
+          automatic: Détection automatique
+          cash_accounts: Comptes d’argent à inclure
+          credit_cards: Cartes de crédit à inclure
+          expected_pay_amount: Montant attendu (%{currency})
+          hourly_pay_rate: Montant estimé par heure planifiée (%{currency})
+          manual_schedule: Prochaine paie manuelle (facultatif)
+          manual_schedule_hint: Saisis les deux champs pour remplacer le calendrier Agendrix et l’estimation automatique. Laisse-les vides pour utiliser la source configurée.
+          next_pay_date: Date de la prochaine paie
+          no_cash_accounts: Aucun compte courant ou d’épargne accessible dans la devise de base.
+          no_credit_cards: Aucune carte de crédit accessible dans la devise de base.
+          pay_cycle_days: Fréquence de la paie
+          pay_cycle_days_option:
+            one: Tous les jours
+            other: Tous les %{count} jours
+          pay_period_anchor_date: Début d’une période de paie connue
+          pay_period_hint: Par exemple, indique le 2 août avec une fréquence de 14 jours et un délai de 5 jours pour une période du 2 au 15 août versée le 20 août.
+          payday_offset_days: Jours entre la fin de la période et la paie
+          payroll_categories: Catégories de revenu de paie
+          payroll_categories_hint: Sélectionnez vos catégories réelles. Sans sélection, Sure reconnaît automatiquement les libellés courants de paie.
+          paycheck_allocation: Répartition de la prochaine paie
+          paycheck_allocation_hint: Choisissez le pourcentage versé dans chaque compte d’argent sélectionné. Le total doit être égal à 100 %.
+          allocation_total: Répartition totale
+          portability_note: Ces choix utilisent les identifiants de votre instance. Si un compte ou une catégorie n’existe plus après un export, les widgets reviennent automatiquement aux données accessibles compatibles.
+          primary_credit_card: Carte principale du widget
+          save: Enregistrer le plan de trésorerie
+          subtitle: Choisissez les données utilisées par les nouveaux widgets sans dépendre du nom de vos comptes ou catégories.
+          title: Plan de trésorerie du tableau de bord
+          work_calendar: Calendrier de travail Agendrix
+          work_calendar_hint: Sure additionne la durée des quarts planifiés dans la période de paie et la multiplie par ton montant horaire estimé. Remplis les quatre champs pour l’activer.
+          work_calendar_privacy: Garde ce lien de calendrier public privé — toute personne qui le possède pourrait voir ton horaire de travail.
+          work_calendar_url: Calendrier public Agendrix (.ics)
+          work_calendar_url_placeholder: https://app.agendrix.com/api/calendar/identifiant-du-calendrier.ics
         country: Pays
         currencies_more: "+%{count} de plus"
         currencies_subtitle: Choisissez les devises qui apparaissent dans les champs monétaires de votre %{moniker}
@@ -190,6 +223,11 @@ fr:
         sharing_title: Partage de %{moniker}
         timezone: Fuseau horaire
         translations_notice: Veuillez noter que nous travaillons toujours sur des traductions dans différentes langues.
+      update:
+        cash_plan_invalid_allocation: Les répartitions doivent être comprises entre 0 % et 100 % et totaliser exactement 100 %.
+        cash_plan_invalid_calendar: Indique un calendrier Agendrix, un montant horaire, un début de période et un délai de versement valides, ou laisse les quatre champs vides.
+        cash_plan_invalid_schedule: Indiquez une date et un montant de paie valides, ou laissez les deux champs vides.
+        cash_plan_saved: Les réglages du plan de trésorerie ont été enregistrés.
     budget_shares:
       update:
         success: Paramètres de partage de budget mis à jour

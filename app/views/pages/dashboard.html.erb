@@ -29,9 +29,23 @@
   </div>
 <% end %>
 
-<%= turbo_frame_tag "dashboard_sections", target: "_top" do %>
+<%= turbo_frame_tag "dashboard_sections", target: "_top", data: { controller: "dashboard-customizer" } do %>
+  <% if @financial_snapshot.fetch(:ignored_account_count).positive? %>
+    <div class="mb-4">
+      <%= render DS::Alert.new(
+        variant: :info,
+        message: t(
+          "pages.dashboard.cash_plan.mixed_currency_notice",
+          count: @financial_snapshot.fetch(:ignored_account_count),
+          currency: @financial_snapshot.fetch(:currency)
+        )
+      ) %>
+    </div>
+  <% end %>
+
   <% if accessible_accounts.any? %>
-    <div class="flex items-center justify-end mb-4">
+    <div class="mb-4 flex items-center justify-between gap-3">
+      <%= render "pages/dashboard/widget_picker", sections: @dashboard_sections %>
       <%= render UI::PeriodPicker.new(selected: @period, url: root_path, frame: "dashboard_sections") %>
     </div>
   <% end %>
@@ -41,16 +55,20 @@
   <% if accessible_accounts.any? %>
     <% @dashboard_sections.each do |section| %>
       <% next unless section[:visible] %>
+      <% hidden = Current.user.dashboard_section_hidden?(section[:key]) %>
       <section
         class="bg-container rounded-xl shadow-border-xs transition-all group focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2<%= " 2xl:col-span-2" if two_column && section[:layout][:col_span] == "full" %>"
         style="<%= "--dash-widget-h: #{section[:layout][:height_px]}px;" if section[:layout][:grow] %>"
         data-dashboard-sortable-target="section"
+        data-dashboard-customizer-target="section"
         data-section-key="<%= section[:key] %>"
+        data-testid="<%= section[:testid] || "dashboard-widget-#{section[:key]}" %>"
         data-controller="dashboard-section<%= " cashflow-expand" if section[:key] == "cashflow_sankey" %>"
         data-dashboard-section-section-key-value="<%= section[:key] %>"
         data-dashboard-section-collapsed-value="<%= Current.user.dashboard_section_collapsed?(section[:key]) %>"
         draggable="true"
         tabindex="0"
+        <%= "hidden" if hidden %>
         role="listitem"
         aria-grabbed="false"
         aria-label="<%= t(section[:title]) %> section. Press Enter or Space to grab for reordering, then use arrow keys to move."
@@ -138,6 +156,14 @@
                 </div>
               </details>
             <% end %>
+            <%= render DS::Button.new(
+                  variant: "icon",
+                  size: "sm",
+                  icon: "eye-off",
+                  class: "opacity-100 lg:opacity-0 lg:group-hover:opacity-100",
+                  aria: { label: t("pages.dashboard.cash_plan.customize.hide", widget: t(section[:title])) },
+                  data: { action: "dashboard-customizer#hide", section_key: section[:key] }
+                ) %>
             <%# A grab surface, not a button — clicking it does nothing. It keeps
                 cursor-grab and the colour shift, and deliberately skips the hover
                 background the other header controls use: a filled hover state
@@ -161,5 +187,11 @@
       <%= render "pages/dashboard/no_accounts_graph_placeholder" %>
     </section>
   <% end %>
+  <div class="<%= "hidden" if @dashboard_sections.any? { |section| section[:visible] && !Current.user.dashboard_section_hidden?(section[:key]) } %> col-span-full rounded-xl border border-secondary bg-container px-6 py-10 text-center"
+       data-dashboard-customizer-target="empty"
+       data-testid="dashboard-empty-selection">
+    <p class="text-sm font-medium text-primary"><%= t("pages.dashboard.cash_plan.customize.empty_title") %></p>
+    <p class="mt-1 text-sm text-secondary"><%= t("pages.dashboard.cash_plan.customize.empty_description") %></p>
+  </div>
   </div>
 <% end %>

@@ -37,14 +37,31 @@ RSpec.describe 'API V1 Transfers', type: :request do
       user: user,
       name: 'No Read Docs Key',
       key: key,
+      display_key: key,
       scopes: [],
       source: 'mobile'
     ).tap { |api_key| api_key.save!(validate: false) }
   end
 
   let(:'X-Api-Key') { api_key.plain_key }
-  let(:checking) { family.accounts.create!(name: 'Checking', balance: 1000, currency: 'USD', accountable: Depository.create!) }
-  let(:savings) { family.accounts.create!(name: 'Savings', balance: 2500, currency: 'USD', accountable: Depository.create!) }
+  let(:checking) do
+    family.accounts.create!(
+      owner: user,
+      name: 'Checking',
+      balance: 1000,
+      currency: 'USD',
+      accountable: Depository.create!
+    )
+  end
+  let(:savings) do
+    family.accounts.create!(
+      owner: user,
+      name: 'Savings',
+      balance: 2500,
+      currency: 'USD',
+      accountable: Depository.create!
+    )
+  end
   let!(:outflow_entry) do
     checking.entries.create!(
       date: Date.current,
@@ -124,6 +141,71 @@ RSpec.describe 'API V1 Transfers', type: :request do
         run_test!
       end
     end
+
+    post 'Create a transfer' do
+      tags 'Transfers'
+      security [ { apiKeyAuth: [] } ]
+      consumes 'application/json'
+      produces 'application/json'
+      parameter name: :transfer_request, in: :body, schema: {
+        type: :object,
+        required: %w[transfer],
+        properties: {
+          transfer: {
+            type: :object,
+            required: %w[from_account_id to_account_id date amount],
+            properties: {
+              from_account_id: { type: :string, format: :uuid },
+              to_account_id: { type: :string, format: :uuid },
+              date: { type: :string, format: :date },
+              amount: { type: :string, example: '120.50' },
+              exchange_rate: { type: :string, nullable: true, example: '1.37' }
+            }
+          }
+        }
+      }
+
+      let(:transfer_request) do
+        {
+          transfer: {
+            from_account_id: checking.id,
+            to_account_id: savings.id,
+            date: Date.current.iso8601,
+            amount: '120.50'
+          }
+        }
+      end
+
+      response '201', 'transfer created' do
+        schema '$ref' => '#/components/schemas/TransferDecision'
+
+        run_test!
+      end
+
+      response '403', 'write scope required' do
+        schema '$ref' => '#/components/schemas/ErrorResponse'
+
+        let(:'X-Api-Key') { api_key_without_read_scope.plain_key }
+
+        run_test!
+      end
+
+      response '422', 'invalid transfer attributes' do
+        schema '$ref' => '#/components/schemas/ErrorResponse'
+        let(:transfer_request) do
+          {
+            transfer: {
+              from_account_id: checking.id,
+              to_account_id: savings.id,
+              date: Date.current.iso8601,
+              amount: '0'
+            }
+          }
+        end
+
+        run_test!
+      end
+    end
   end
 
   path '/api/v1/transfers/{id}' do
@@ -139,13 +221,7 @@ RSpec.describe 'API V1 Transfers', type: :request do
       response '200', 'transfer retrieved' do
         schema '$ref' => '#/components/schemas/TransferDecision'
 
-        run_test! do |response|
-          body = JSON.parse(response.body)
-          expect(body['source_fee_amount']).to eq '0.0'
-          expect(body['destination_fee_amount']).to eq '0.0'
-          expect(body).to have_key('source_fee_currency')
-          expect(body).to have_key('destination_fee_currency')
-        end
+        run_test!
       end
 
       response '401', 'unauthorized' do

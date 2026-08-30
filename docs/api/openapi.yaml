@@ -658,6 +658,92 @@ components:
             "$ref": "#/components/schemas/BudgetSummary"
         pagination:
           "$ref": "#/components/schemas/Pagination"
+    Goal:
+      type: object
+      required:
+      - id
+      - name
+      - currency
+      - state
+      - status
+      - progress_percent
+      - target_amount
+      - target_amount_cents
+      - current_amount
+      - current_amount_cents
+      - remaining_amount
+      - remaining_amount_cents
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        currency:
+          type: string
+        target_date:
+          type: string
+          format: date
+          nullable: true
+        state:
+          type: string
+          enum:
+          - active
+          - paused
+          - completed
+          - archived
+        status:
+          type: string
+          enum:
+          - reached
+          - on_track
+          - behind
+          - no_target_date
+          - paused
+          - completed
+          - archived
+        progress_percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        color:
+          type: string
+          nullable: true
+        icon:
+          type: string
+          nullable: true
+        target_amount:
+          type: string
+        target_amount_cents:
+          type: integer
+        current_amount:
+          type: string
+        current_amount_cents:
+          type: integer
+        remaining_amount:
+          type: string
+        remaining_amount_cents:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    GoalCollection:
+      type: object
+      required:
+      - goals
+      - pagination
+      properties:
+        goals:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Goal"
+        pagination:
+          "$ref": "#/components/schemas/Pagination"
     BudgetCategorySummary:
       type: object
       required:
@@ -3102,6 +3188,61 @@ components:
           "$ref": "#/components/schemas/Money"
         liabilities:
           "$ref": "#/components/schemas/Money"
+    Paycheck:
+      type: object
+      required:
+      - name
+      - amount
+      - last_date
+      - next_date
+      - days_remaining
+      - estimated
+      - source
+      properties:
+        name:
+          type: string
+        amount:
+          "$ref": "#/components/schemas/Money"
+        last_date:
+          type: string
+          format: date
+        next_date:
+          type: string
+          format: date
+        days_remaining:
+          type: integer
+        estimated:
+          type: boolean
+        source:
+          type: string
+          enum:
+          - agendrix
+          - configured
+          - recurring
+          - inferred
+        scheduled_hours:
+          type: number
+          nullable: true
+        pay_period_start:
+          type: string
+          format: date
+          nullable: true
+        pay_period_end:
+          type: string
+          format: date
+          nullable: true
+    PaycheckResponse:
+      type: object
+      required:
+      - currency
+      - paycheck
+      properties:
+        currency:
+          type: string
+        paycheck:
+          allOf:
+          - "$ref": "#/components/schemas/Paycheck"
+          nullable: true
     SuccessMessage:
       type: object
       required:
@@ -4857,6 +4998,70 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v1/goals":
+    get:
+      summary: List goals
+      tags:
+      - Goals
+      security:
+      - apiKeyAuth: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: goals listed
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GoalCollection"
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '403':
+          description: insufficient scope
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v1/goals/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      summary: Retrieve a goal
+      tags:
+      - Goals
+      security:
+      - apiKeyAuth: []
+      responses:
+        '200':
+          description: goal retrieved
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Goal"
+        '404':
+          description: goal not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
   "/api/v1/holdings":
     get:
       summary: List holdings
@@ -5979,6 +6184,28 @@ paths:
                 "$ref": "#/components/schemas/MerchantDetail"
         '404':
           description: merchant not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v1/paycheck":
+    get:
+      summary: Show upcoming paycheck
+      tags:
+      - Paycheck
+      description: Returns the upcoming paycheck calculated by Sure, including Agendrix-based
+        estimates when configured. Calendar URLs and payroll settings are never exposed.
+      security:
+      - apiKeyAuth: []
+      responses:
+        '200':
+          description: paycheck returned
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaycheckResponse"
+        '401':
+          description: unauthorized
           content:
             application/json:
               schema:
@@ -7812,6 +8039,64 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+    post:
+      summary: Create a transfer
+      tags:
+      - Transfers
+      security:
+      - apiKeyAuth: []
+      parameters: []
+      responses:
+        '201':
+          description: transfer created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/TransferDecision"
+        '403':
+          description: write scope required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '422':
+          description: invalid transfer attributes
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - transfer
+              properties:
+                transfer:
+                  type: object
+                  required:
+                  - from_account_id
+                  - to_account_id
+                  - date
+                  - amount
+                  properties:
+                    from_account_id:
+                      type: string
+                      format: uuid
+                    to_account_id:
+                      type: string
+                      format: uuid
+                    date:
+                      type: string
+                      format: date
+                    amount:
+                      type: string
+                      example: '120.50'
+                    exchange_rate:
+                      type: string
+                      nullable: true
+                      example: '1.37'
   "/api/v1/transfers/{id}":
     parameters:
     - name: id

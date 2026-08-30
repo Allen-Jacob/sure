@@ -399,6 +399,7 @@ Rails.application.routes.draw do
   end
 
   resources :reports, only: %i[index] do
+    get :comparison, on: :collection
     patch :update_preferences, on: :collection
     get :export_transactions, on: :collection
     get :google_sheets_instructions, on: :collection
@@ -650,6 +651,7 @@ Rails.application.routes.draw do
       resources :balances, only: [ :index, :show ]
       resources :budgets, only: [ :index, :show ]
       resources :budget_categories, only: [ :index, :show ]
+      resources :goals, only: [ :index, :show ]
       resources :categories, only: [ :index, :show, :create ]
       resources :merchants, only: [ :index, :show, :create ]
       resources :rules, only: [ :index, :show ]
@@ -658,10 +660,12 @@ Rails.application.routes.draw do
       resources :security_prices, only: [ :index, :show ]
       resources :tags, only: [ :index, :show, :create, :update, :destroy ]
 
-      resources :transactions, only: [ :index, :show, :create, :update, :destroy ]
+      resources :transactions, only: [ :index, :show, :create, :update, :destroy ] do
+        post :split, on: :member
+      end
       resources :trades, only: [ :index, :show, :create, :update, :destroy ]
       resources :holdings, only: [ :index, :show ]
-      resources :transfers, only: [ :index, :show ]
+      resources :transfers, only: [ :index, :show, :create ]
       resources :rejected_transfers, only: [ :index, :show ]
       resources :valuations, only: [ :index, :create, :update, :show ]
       resources :recurring_transactions, only: [ :index, :show, :create, :update, :destroy ]
@@ -681,6 +685,7 @@ Rails.application.routes.draw do
       resources :insights, only: [ :index ]
       resources :push_subscriptions, only: [ :create, :destroy ]
       resource :family_settings, only: [ :show ], controller: :family_settings
+      resource :paycheck, only: [ :show ], controller: :paycheck
       post :sync, to: "sync#create", as: :sync_job
       resources :syncs, only: [ :index, :show ] do
         get :latest, on: :collection

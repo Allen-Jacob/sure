@@ -477,8 +477,26 @@ class User < ApplicationRecord
     preferences&.dig("collapsed_sections", section_key) == true
   end
 
+  def dashboard_section_hidden?(section_key)
+    preferences&.dig("hidden_sections", section_key) == true
+  end
+
   def dashboard_section_order
     preferences&.[]("section_order") || default_dashboard_section_order
+  end
+
+  def dashboard_cash_plan_settings
+    settings = preferences&.[]("dashboard_cash_plan")
+    settings.is_a?(Hash) ? settings : {}
+  end
+
+  def update_dashboard_cash_plan_settings(settings)
+    transaction do
+      lock!
+      updated_prefs = (preferences || {}).deep_dup
+      updated_prefs["dashboard_cash_plan"] = settings
+      update!(preferences: updated_prefs)
+    end
   end
 
   # Per-widget height preset override ("compact" | "auto" | "tall"); nil = use default.
@@ -601,7 +619,25 @@ class User < ApplicationRecord
     end
 
     def default_dashboard_section_order
-      %w[insights_feed cashflow_sankey outflows_donut net_worth_chart balance_sheet]
+      %w[
+        insights_feed
+        cash_plan_available
+        cash_plan_paycheck
+        cash_plan_budget
+        cash_plan_spending
+        cash_plan_credit_card
+        cash_plan_allocation
+        cash_plan_goals
+        cash_plan_purchases
+        cash_plan_categories
+        cash_plan_review
+        money_flow
+        outflows_donut
+        net_worth_chart
+        balance_sheet
+        investment_summary
+        cashflow_sankey
+      ]
     end
 
     def default_reports_section_order

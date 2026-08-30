@@ -1,0 +1,28 @@
+<%= render DS::Card.new(data: { testid: "comparison-metric-#{metric.fetch(:key)}" }) do %>
+  <div class="flex items-start justify-between gap-3">
+    <h2 class="text-sm font-medium text-secondary"><%= t("reports.comparison.metrics.#{metric.fetch(:key)}") %></h2>
+    <% if metric.fetch(:percent_change).present? %>
+      <%= render DS::Pill.new(
+        label: metric.fetch(:percentage) ? t("reports.comparison.points", value: number_with_precision(metric.fetch(:percent_change).abs, precision: 1, strip_insignificant_zeros: true)) : number_to_percentage(metric.fetch(:percent_change).abs, precision: 1, strip_insignificant_zeros: true),
+        tone: metric.fetch(:favorable) ? :success : :warning,
+        icon: metric.fetch(:percent_change).negative? ? "trending-down" : "trending-up",
+        marker: false
+      ) %>
+    <% end %>
+  </div>
+
+  <dl class="mt-5 space-y-4">
+    <% [ [ primary_period, metric.fetch(:primary) ], [ comparison_period, metric.fetch(:comparison) ] ].each_with_index do |(period, value), index| %>
+      <div class="flex items-baseline justify-between gap-3">
+        <dt class="text-xs text-secondary"><%= l(period.start_date, format: "%B %Y") %></dt>
+        <dd class="font-medium tabular-nums privacy-sensitive <%= index.zero? ? "text-primary" : "text-secondary" %>">
+          <% if metric.fetch(:percentage) %>
+            <%= value.nil? ? t("reports.comparison.not_available") : number_to_percentage(value, precision: 1, strip_insignificant_zeros: true) %>
+          <% else %>
+            <%= value.format(precision: 0) %>
+          <% end %>
+        </dd>
+      </div>
+    <% end %>
+  </dl>
+<% end %>

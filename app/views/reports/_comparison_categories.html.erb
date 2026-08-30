@@ -1,0 +1,38 @@
+<%= render DS::Card.new do %>
+  <div>
+    <h2 class="text-base font-medium text-primary"><%= title %></h2>
+    <p class="mt-1 text-sm text-secondary"><%= description %></p>
+  </div>
+
+  <% if rows.any? %>
+    <div class="mt-5 overflow-x-auto">
+      <table class="w-full min-w-160 text-sm">
+        <thead>
+          <tr class="border-b border-secondary text-left text-xs text-secondary">
+            <th class="pb-3 pr-4 font-medium"><%= t("reports.comparison.category") %></th>
+            <th class="px-4 pb-3 text-right font-medium"><%= l(primary_period.start_date, format: "%B %Y") %></th>
+            <th class="px-4 pb-3 text-right font-medium"><%= l(comparison_period.start_date, format: "%B %Y") %></th>
+            <th class="px-4 pb-3 text-right font-medium"><%= t("reports.comparison.difference") %></th>
+            <th class="pb-3 pl-4 text-right font-medium"><%= t("reports.comparison.change") %></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-secondary">
+          <% rows.each do |row| %>
+            <% improved = favorable_direction == :up ? row.fetch(:delta).amount >= 0 : row.fetch(:delta).amount <= 0 %>
+            <tr>
+              <th class="py-3 pr-4 text-left font-medium text-primary"><%= row.fetch(:category).display_name %></th>
+              <td class="px-4 py-3 text-right tabular-nums privacy-sensitive"><%= row.fetch(:primary).format(precision: 0) %></td>
+              <td class="px-4 py-3 text-right tabular-nums privacy-sensitive text-secondary"><%= row.fetch(:comparison).format(precision: 0) %></td>
+              <td class="px-4 py-3 text-right tabular-nums privacy-sensitive <%= improved ? "text-success" : "text-destructive" %>"><%= row.fetch(:delta).format(precision: 0) %></td>
+              <td class="py-3 pl-4 text-right tabular-nums <%= improved ? "text-success" : "text-destructive" %>">
+                <%= row.fetch(:percent_change) ? number_to_percentage(row.fetch(:percent_change), precision: 1, strip_insignificant_zeros: true) : t("reports.comparison.not_available") %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p class="mt-5 rounded-lg bg-surface-inset p-4 text-sm text-secondary"><%= t("reports.comparison.no_category_data") %></p>
+  <% end %>
+<% end %>

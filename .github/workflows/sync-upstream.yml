@@ -1,0 +1,142 @@
+# GitHub only runs schedule and workflow_dispatch workflows that exist on the
+# repository's default branch. Keep custom-dashboard as the default branch so
+# this file can live here while main remains an exact mirror of upstream.
+name: Sync Sure Upstream
+
+on:
+  schedule:
+    # Avoid the beginning of the hour, when scheduled Actions runs are busiest.
+    - cron: "17 12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-sure-upstream
+  cancel-in-progress: false
+
+env:
+  MIRROR_BRANCH: main
+  CUSTOM_BRANCH: custom-dashboard
+
+jobs:
+  sync:
+    name: Sync upstream main
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Validate automation token
+        env:
+          AUTOMATION_TOKEN: ${{ secrets.AUTOMATION_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$AUTOMATION_TOKEN" ]]; then
+            echo "::error::The AUTOMATION_TOKEN repository secret is missing."
+            exit 1
+          fi
+
+      - name: Checkout mirror branch
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.AUTOMATION_TOKEN }}
+
+      - name: Fetch Sure upstream
+        run: |
+          git remote add upstream https://github.com/we-promise/sure.git
+          git fetch --no-tags upstream main
+
+      - name: Fast-forward mirror branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if ! git merge-base --is-ancestor HEAD upstream/main; then
+            echo "::error::origin/main contains commits that are not in we-promise/sure:main. Refusing to overwrite them."
+            exit 1
+          fi
+
+          git merge --ff-only upstream/main
+          git push origin HEAD:refs/heads/main
+
+          test "$(git rev-parse HEAD)" = "$(git rev-parse upstream/main)"
+
+  create-pr:
+    name: Create update PR
+    needs: sync
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Validate automation token
+        env:
+          AUTOMATION_TOKEN: ${{ secrets.AUTOMATION_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$AUTOMATION_TOKEN" ]]; then
+            echo "::error::The AUTOMATION_TOKEN repository secret is missing."
+            exit 1
+          fi
+
+      - name: Checkout custom branch
+        uses: actions/checkout@v6
+        with:
+          ref: custom-dashboard
+          fetch-depth: 0
+          token: ${{ secrets.AUTOMATION_TOKEN }}
+          persist-credentials: false
+
+      - name: Check for upstream commits to integrate
+        id: diff
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch --no-tags origin \
+            +refs/heads/main:refs/remotes/origin/main \
+            +refs/heads/custom-dashboard:refs/remotes/origin/custom-dashboard
+
+          if git merge-base --is-ancestor origin/main origin/custom-dashboard; then
+            echo "changes=false" >> "$GITHUB_OUTPUT"
+            echo "custom-dashboard already contains every commit from main."
+          else
+            echo "changes=true" >> "$GITHUB_OUTPUT"
+            echo "main contains upstream commits not yet integrated into custom-dashboard."
+          fi
+
+      - name: Create or reuse update PR
+        if: steps.diff.outputs.changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMATION_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          pr_number="$(gh pr list \
+            --repo "$GH_REPO" \
+            --base "$CUSTOM_BRANCH" \
+            --head "$MIRROR_BRANCH" \
+            --state open \
+            --limit 1 \
+            --json number \
+            --jq '.[0].number')"
+
+          if [[ -n "$pr_number" ]]; then
+            echo "Using existing PR #$pr_number"
+            exit 0
+          fi
+
+          gh pr create \
+            --repo "$GH_REPO" \
+            --base "$CUSTOM_BRANCH" \
+            --head "$MIRROR_BRANCH" \
+            --title "Sync latest Sure upstream changes" \
+            --body "Automatic proposal to integrate the latest we-promise/sure:main commits into custom-dashboard. Merge this PR with a merge commit (not squash or rebase) so future sync runs can recognize the upstream commits as integrated."

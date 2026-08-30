@@ -1,0 +1,97 @@
+---
+en:
+  pages:
+    dashboard:
+      cash_plan:
+        attention: Attention
+        up_to_date: On track
+        not_available: Not available
+        paycheck_configured: Configured paycheck
+        paycheck_agendrix: Agendrix scheduled pay
+        paycheck_fallback: Expected income
+        mixed_currency_notice:
+          one: "One account is excluded from this day-to-day view because it is not in %{currency}."
+          other: "%{count} accounts are excluded from this day-to-day view because they are not in %{currency}."
+        customize:
+          button: Customize
+          title: Choose widgets
+          description: Show or remove widgets. Your selection is saved automatically.
+          hide: "Remove the %{widget} widget"
+          empty_title: No widgets displayed
+          empty_description: Use Customize to add the widgets you want to see.
+          groups:
+            cash_plan: Day-to-day
+            analysis: Sure analytics
+        available:
+          title: Truly available money
+          description: What remains after your near-term commitments
+          helper: Safe to use without touching money already committed elsewhere
+          cash: Account balance
+          card_debt: Credit cards
+          planned: Planned payments
+          reserved: Reserved for goals
+        paycheck:
+          title: Next paycheck
+          days_remaining: Days remaining
+          calendar_estimated: Calculated from your scheduled Agendrix hours
+          calendar_hours: "%{hours} scheduled hours"
+          calendar_period: "%{start_date}–%{end_date}"
+          estimated: Estimated from your salary history
+          empty_title: No paycheck detected
+          empty_description: Categorize a salary transaction to enable payday estimates.
+        budget:
+          title: Budget until payday
+          description: A simple spending guardrail
+          total_label: Total you can still spend
+          daily_label: Comfortable daily average
+          for_days:
+            one: for 1 day
+            other: "for %{count} days"
+        spending:
+          title: Spending since last paycheck
+          since: "Since %{date}"
+          days:
+            one: 1 day elapsed
+            other: "%{count} days elapsed"
+          change: "%{percent}% vs prior period"
+          previous_period: Comparable prior period
+        credit_card:
+          title: Credit card
+          current: Current balance
+          statement: Statement balance
+          due: Due date
+          repayable: Available to repay it
+          empty_title: No credit card
+          empty_description: Add a credit card account to see its repayment position.
+        allocation:
+          title: Next paycheck allocation
+          description: How your next paycheck will be split between accounts
+          edit: Adjust
+          empty_title: No cash account available
+          empty_description: Add a checking or savings account to plan your paycheck.
+        goals:
+          title: Savings goals
+          description: Progress on your three highest-priority goals
+          view_plan: View plan
+          empty_title: No savings goals yet
+          empty_description: Create a goal to reserve money for what matters next.
+        purchases:
+          title: Planned purchases
+          description: Dated goals and the impact of buying them now
+          price: Price
+          saved: Set aside
+          impact: Left after purchase
+          empty_title: No planned purchase
+          empty_description: Add a target date to a savings goal to track it here.
+        categories:
+          title: Spending by category
+          description: Main categories since your last paycheck
+          empty_title: No spending in this period
+          empty_description: Category totals will appear after new expenses are recorded.
+        review:
+          title: Transactions to review
+          description: Items that may need a quick decision
+          uncategorized: Uncategorized transactions
+          duplicates: Possible duplicates
+          missing_refunds: Expected refunds overdue
+          open_transactions: Review transactions

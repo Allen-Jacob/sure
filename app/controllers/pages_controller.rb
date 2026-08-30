@@ -8,6 +8,16 @@ class PagesController < ApplicationController
   #               false for content-sized widgets (tables, stat grids)
   #   min_height: floor in px
   DASHBOARD_SECTION_LAYOUTS = {
+    "cash_plan_available"       => { col_span: "full",   grow: false, min_height: 0, width_toggle: true },
+    "cash_plan_paycheck"        => { col_span: "single", grow: false, min_height: 0, width_toggle: true },
+    "cash_plan_budget"          => { col_span: "single", grow: false, min_height: 0, width_toggle: true },
+    "cash_plan_spending"        => { col_span: "single", grow: false, min_height: 0, width_toggle: true },
+    "cash_plan_credit_card"     => { col_span: "single", grow: false, min_height: 0, width_toggle: true },
+    "cash_plan_allocation"      => { col_span: "single", grow: false, min_height: 0, width_toggle: true },
+    "cash_plan_goals"           => { col_span: "single", grow: false, min_height: 0, width_toggle: true },
+    "cash_plan_purchases"       => { col_span: "full",   grow: false, min_height: 0, width_toggle: true },
+    "cash_plan_categories"      => { col_span: "single", grow: false, min_height: 0, width_toggle: true },
+    "cash_plan_review"          => { col_span: "single", grow: false, min_height: 0, width_toggle: true },
     # Width-toggleable but full by default: the feed is much shorter than any
     # other single-width widget, so defaulting to half leaves a grid hole the
     # masonry can't backfill (dense placement needs a later card short enough
@@ -20,6 +30,19 @@ class PagesController < ApplicationController
     "net_worth_chart"    => { col_span: "single", grow: true,  min_height: 208, width_toggle: true },
     "balance_sheet"      => { col_span: "single", grow: false, min_height: 0, width_toggle: true }
   }.freeze
+
+  CASH_PLAN_WIDGETS = [
+    { key: "cash_plan_available", widget: "available", title: "pages.dashboard.cash_plan.available.title", testid: "actual-available-widget" },
+    { key: "cash_plan_paycheck", widget: "paycheck", title: "pages.dashboard.cash_plan.paycheck.title", testid: "next-paycheck-widget" },
+    { key: "cash_plan_budget", widget: "budget", title: "pages.dashboard.cash_plan.budget.title", testid: "remaining-budget-widget" },
+    { key: "cash_plan_spending", widget: "spending", title: "pages.dashboard.cash_plan.spending.title", testid: "spending-since-paycheck-widget" },
+    { key: "cash_plan_credit_card", widget: "credit_card", title: "pages.dashboard.cash_plan.credit_card.title", testid: "credit-card-widget" },
+    { key: "cash_plan_allocation", widget: "allocation", title: "pages.dashboard.cash_plan.allocation.title", testid: "paycheck-allocation-widget" },
+    { key: "cash_plan_goals", widget: "goals", title: "pages.dashboard.cash_plan.goals.title", testid: "savings-goals-widget" },
+    { key: "cash_plan_purchases", widget: "purchases", title: "pages.dashboard.cash_plan.purchases.title", testid: "planned-purchases-widget" },
+    { key: "cash_plan_categories", widget: "categories", title: "pages.dashboard.cash_plan.categories.title", testid: "spending-categories-widget" },
+    { key: "cash_plan_review", widget: "review", title: "pages.dashboard.cash_plan.review.title", testid: "transactions-review-widget" }
+  ].freeze
 
   # Number of consecutive months (ending at the selected month) shown as
   # bars in the "money_flow" dashboard widget.
@@ -40,6 +63,11 @@ class PagesController < ApplicationController
     @balance_sheet = Current.family.balance_sheet
     @investment_statement = Current.family.investment_statement
     @accounts = Current.user.accessible_accounts.visible.with_attached_logo
+    @financial_snapshot = Dashboard::FinancialSnapshot.new(
+      family: Current.family,
+      user: Current.user,
+      accounts: @accounts
+    ).to_h
 
     family_currency = Current.family.currency
 
@@ -121,6 +149,7 @@ class PagesController < ApplicationController
       prefs = params.require(:preferences)
       {}.tap do |permitted|
         permitted["collapsed_sections"] = prefs[:collapsed_sections].to_unsafe_h if prefs[:collapsed_sections].respond_to?(:to_unsafe_h)
+        permitted["hidden_sections"] = prefs[:hidden_sections].to_unsafe_h if prefs[:hidden_sections].respond_to?(:to_unsafe_h)
         permitted["section_order"] = prefs[:section_order] if prefs[:section_order].is_a?(Array)
         permitted["dashboard_section_layout"] = prefs[:dashboard_section_layout].to_unsafe_h if prefs[:dashboard_section_layout].respond_to?(:to_unsafe_h)
       end
@@ -140,12 +169,13 @@ class PagesController < ApplicationController
         layout: section_layout("insights_feed"),
         locals: { insights: @feed_insights },
         visible: @feed_insights.any?,
+        group: :analysis,
         collapsible: true
       }
     end
 
     def build_dashboard_sections
-      all_sections = [
+      all_sections = cash_plan_sections + [
         insights_feed_section,
         {
           key: "cashflow_sankey",
@@ -154,6 +184,7 @@ class PagesController < ApplicationController
           layout: section_layout("cashflow_sankey"),
           locals: { sankey_data: @cashflow_sankey_data, period: @period },
           visible: @accounts.any?,
+          group: :analysis,
           collapsible: true
         },
         {
@@ -163,6 +194,7 @@ class PagesController < ApplicationController
           layout: section_layout("money_flow"),
           locals: { money_flow_data: @money_flow_data, accounts: @money_flow_accounts, accessible_account_ids: @money_flow_accessible_account_ids, col_span: section_layout("money_flow")[:col_span] },
           visible: @accounts.any?,
+          group: :analysis,
           collapsible: true
         },
         {
@@ -172,6 +204,7 @@ class PagesController < ApplicationController
           layout: section_layout("outflows_donut"),
           locals: { outflows_data: @outflows_data, period: @period },
           visible: @accounts.any? && @outflows_data[:categories].present?,
+          group: :analysis,
           collapsible: true
         },
         {
@@ -181,6 +214,7 @@ class PagesController < ApplicationController
           layout: section_layout("investment_summary"),
           locals: { investment_statement: @investment_statement, period: @period },
           visible: @accounts.any? && @investment_statement.investment_accounts.any?,
+          group: :analysis,
           collapsible: true
         },
         {
@@ -190,6 +224,7 @@ class PagesController < ApplicationController
           layout: section_layout("net_worth_chart"),
           locals: { balance_sheet: @balance_sheet, period: @period },
           visible: @accounts.any?,
+          group: :analysis,
           collapsible: true
         },
         {
@@ -199,6 +234,7 @@ class PagesController < ApplicationController
           layout: section_layout("balance_sheet"),
           locals: { balance_sheet: @balance_sheet },
           visible: @accounts.any?,
+          group: :analysis,
           collapsible: true
         }
       ].compact
@@ -224,6 +260,22 @@ class PagesController < ApplicationController
       end
 
       ordered_sections
+    end
+
+    def cash_plan_sections
+      CASH_PLAN_WIDGETS.map do |widget|
+        {
+          key: widget.fetch(:key),
+          title: widget.fetch(:title),
+          partial: "pages/dashboard/cash_plan_widget",
+          layout: section_layout(widget.fetch(:key)),
+          locals: { cash_plan: @financial_snapshot, widget_key: widget.fetch(:widget) },
+          testid: widget.fetch(:testid),
+          visible: true,
+          group: :cash_plan,
+          collapsible: true
+        }
+      end
     end
 
     # Resolves a section's layout guardrails, applying the user's height preset

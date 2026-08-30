@@ -12,6 +12,47 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
   test "dashboard" do
     get root_path
     assert_response :ok
+    assert_select "[data-testid='dashboard-widget-picker']"
+    %w[
+      actual-available-widget
+      next-paycheck-widget
+      remaining-budget-widget
+      spending-since-paycheck-widget
+      credit-card-widget
+      paycheck-allocation-widget
+      savings-goals-widget
+      planned-purchases-widget
+      spending-categories-widget
+      transactions-review-widget
+    ].each do |widget|
+      assert_select "[data-testid='#{widget}']", count: 1
+    end
+
+
+    dashboard_grid = css_select("[data-controller~='dashboard-sortable']").first
+    assert dashboard_grid.at_css("[data-testid='actual-available-widget']")
+    assert dashboard_grid.at_css("[data-section-key='net_worth_chart']")
+  end
+
+  test "dashboard renders hidden widgets for later personalization" do
+    @user.update_dashboard_preferences({
+      "hidden_sections" => { "cash_plan_credit_card" => true }
+    })
+
+    get root_path
+
+    assert_response :ok
+    assert_select "[data-section-key='cash_plan_credit_card'][hidden]", count: 1
+    assert_select "input[data-section-key='cash_plan_credit_card']:not([checked])", count: 1
+  end
+
+  test "update_preferences persists hidden dashboard widgets" do
+    patch "/dashboard/preferences", params: {
+      preferences: { hidden_sections: { cash_plan_budget: true } }
+    }, as: :json
+
+    assert_response :ok
+    assert @user.reload.dashboard_section_hidden?("cash_plan_budget")
   end
 
   test "inactive user's existing session is revoked" do

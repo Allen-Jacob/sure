@@ -103,6 +103,199 @@
     <% end %>
   <% end %>
 <% end %>
+<%= settings_section title: t(".cash_plan.title"), subtitle: t(".cash_plan.subtitle") do %>
+  <%= styled_form_with scope: :dashboard_cash_plan,
+                       url: settings_preferences_path,
+                       method: :patch,
+                       class: "space-y-6",
+                       data: { controller: "paycheck-allocation" } do |form| %>
+    <%= render DS::Alert.new(message: t(".cash_plan.portability_note"), variant: :info) %>
+
+    <div class="grid gap-4 lg:grid-cols-2">
+      <fieldset class="space-y-3 rounded-xl border border-secondary bg-container-inset p-4">
+        <legend class="px-1 text-sm font-medium text-primary"><%= t(".cash_plan.cash_accounts") %></legend>
+        <%= hidden_field_tag "dashboard_cash_plan[depository_account_ids][]", "", id: nil %>
+        <% if @cash_plan_depository_accounts.any? %>
+          <% @cash_plan_depository_accounts.each do |account| %>
+            <label class="flex cursor-pointer items-center gap-3 text-sm text-primary">
+              <%= check_box_tag "dashboard_cash_plan[depository_account_ids][]",
+                                account.id,
+                                account.id.to_s.in?(@selected_cash_plan_depository_ids),
+                                id: "dashboard_cash_plan_depository_account_#{account.id}",
+                                class: "checkbox checkbox--light",
+                                data: {
+                                  paycheck_allocation_target: "account",
+                                  account_id: account.id,
+                                  action: "change->paycheck-allocation#update"
+                                } %>
+              <span class="min-w-0 flex-1 truncate"><%= account.name %></span>
+              <span class="privacy-sensitive shrink-0 text-xs text-secondary"><%= format_money(account.balance_money) %></span>
+            </label>
+          <% end %>
+        <% else %>
+          <p class="text-sm text-secondary"><%= t(".cash_plan.no_cash_accounts") %></p>
+        <% end %>
+      </fieldset>
+
+      <fieldset class="space-y-3 rounded-xl border border-secondary bg-container-inset p-4">
+        <legend class="px-1 text-sm font-medium text-primary"><%= t(".cash_plan.credit_cards") %></legend>
+        <%= hidden_field_tag "dashboard_cash_plan[credit_card_account_ids][]", "", id: nil %>
+        <% if @cash_plan_credit_card_accounts.any? %>
+          <% @cash_plan_credit_card_accounts.each do |account| %>
+            <label class="flex cursor-pointer items-center gap-3 text-sm text-primary">
+              <%= check_box_tag "dashboard_cash_plan[credit_card_account_ids][]",
+                                account.id,
+                                account.id.to_s.in?(@selected_cash_plan_credit_card_ids),
+                                id: "dashboard_cash_plan_credit_card_account_#{account.id}",
+                                class: "checkbox checkbox--light" %>
+              <span class="min-w-0 flex-1 truncate"><%= account.name %></span>
+              <span class="privacy-sensitive shrink-0 text-xs text-secondary"><%= format_money(account.balance_money) %></span>
+            </label>
+          <% end %>
+        <% else %>
+          <p class="text-sm text-secondary"><%= t(".cash_plan.no_credit_cards") %></p>
+        <% end %>
+      </fieldset>
+    </div>
+
+    <fieldset class="space-y-4 rounded-xl border border-secondary bg-container-inset p-4">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <legend class="text-sm font-medium text-primary"><%= t(".cash_plan.paycheck_allocation") %></legend>
+          <p class="mt-1 text-sm text-secondary"><%= t(".cash_plan.paycheck_allocation_hint") %></p>
+        </div>
+        <div class="text-right">
+          <span class="text-xs text-secondary"><%= t(".cash_plan.allocation_total") %></span>
+          <p class="font-medium tabular-nums" data-paycheck-allocation-target="total" aria-live="polite">100 %</p>
+        </div>
+      </div>
+
+      <% if @cash_plan_depository_accounts.any? %>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <% @cash_plan_depository_accounts.each do |account| %>
+            <label class="rounded-lg border border-secondary bg-container p-3">
+              <span class="block truncate text-sm font-medium text-primary"><%= account.name %></span>
+              <span class="mt-2 flex items-center gap-2">
+                <%= number_field_tag "dashboard_cash_plan[paycheck_allocations][#{account.id}]",
+                                     @cash_plan_paycheck_allocations.fetch(account.id.to_s, 0),
+                                     id: "dashboard_cash_plan_paycheck_allocation_#{account.id}",
+                                     min: 0,
+                                     max: 100,
+                                     step: "0.1",
+                                     inputmode: "decimal",
+                                     autocomplete: "off",
+                                     class: "form-field__input tabular-nums",
+                                     data: {
+                                       paycheck_allocation_target: "percentage",
+                                       account_id: account.id,
+                                       action: "input->paycheck-allocation#update"
+                                     } %>
+                <span class="text-sm text-secondary">%</span>
+              </span>
+            </label>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-sm text-secondary"><%= t(".cash_plan.no_cash_accounts") %></p>
+      <% end %>
+    </fieldset>
+
+    <div class="grid gap-4 lg:grid-cols-2">
+      <div class="space-y-2">
+        <p class="text-sm font-medium text-primary"><%= t(".cash_plan.payroll_categories") %></p>
+        <p class="text-sm text-secondary"><%= t(".cash_plan.payroll_categories_hint") %></p>
+        <%= hidden_field_tag "dashboard_cash_plan[payroll_category_ids][]", "", id: nil %>
+        <div class="max-h-56 space-y-3 overflow-auto rounded-xl border border-secondary bg-container-inset p-4">
+          <% @cash_plan_categories.each do |category| %>
+            <label class="flex cursor-pointer items-center gap-3 text-sm text-primary">
+              <%= check_box_tag "dashboard_cash_plan[payroll_category_ids][]",
+                                category.id,
+                                category.id.to_s.in?(@selected_payroll_category_ids),
+                                id: "dashboard_cash_plan_payroll_category_#{category.id}",
+                                class: "checkbox checkbox--light" %>
+              <span><%= category.parent ? "#{category.parent.name} / #{category.name}" : category.name %></span>
+            </label>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <%= form.select :primary_credit_card_id,
+                        @cash_plan_credit_card_accounts.map { |account| [ account.name, account.id ] },
+                        {
+                          label: t(".cash_plan.primary_credit_card"),
+                          include_blank: t(".cash_plan.automatic"),
+                          selected: @cash_plan_settings["primary_credit_card_id"]
+                        } %>
+        <%= form.select :pay_cycle_days,
+                        Settings::PreferencesController::PAY_CYCLE_DAYS.map { |days| [ t(".cash_plan.pay_cycle_days_option", count: days), days ] },
+                        {
+                          label: t(".cash_plan.pay_cycle_days"),
+                          selected: @cash_plan_settings.fetch("pay_cycle_days", Dashboard::FinancialSnapshot::DEFAULT_PAY_CYCLE_DAYS)
+                        } %>
+      </div>
+    </div>
+
+    <fieldset class="space-y-4 rounded-xl border border-secondary bg-container-inset p-4">
+      <div>
+        <legend class="text-sm font-medium text-primary"><%= t(".cash_plan.work_calendar") %></legend>
+        <p class="mt-1 text-sm text-secondary"><%= t(".cash_plan.work_calendar_hint") %></p>
+      </div>
+      <%= form.text_field :work_calendar_url,
+                          label: t(".cash_plan.work_calendar_url"),
+                          value: @cash_plan_settings["work_calendar_url"],
+                          placeholder: t(".cash_plan.work_calendar_url_placeholder"),
+                          autocomplete: "off",
+                          autocapitalize: "none",
+                          spellcheck: "false",
+                          inputmode: "url" %>
+      <p class="text-xs text-secondary"><%= t(".cash_plan.work_calendar_privacy") %></p>
+      <div class="grid gap-4 sm:grid-cols-3">
+        <%= form.number_field :hourly_pay_rate,
+                              label: t(".cash_plan.hourly_pay_rate", currency: @user.family.primary_currency_code),
+                              value: @cash_plan_settings["hourly_pay_rate"],
+                              min: 0,
+                              step: "0.01" %>
+        <%= form.date_field :pay_period_anchor_date,
+                            label: t(".cash_plan.pay_period_anchor_date"),
+                            value: @cash_plan_settings["pay_period_anchor_date"] %>
+        <%= form.number_field :payday_offset_days,
+                              label: t(".cash_plan.payday_offset_days"),
+                              value: @cash_plan_settings["payday_offset_days"],
+                              min: Settings::PreferencesController::PAYDAY_OFFSET_DAYS.begin,
+                              max: Settings::PreferencesController::PAYDAY_OFFSET_DAYS.end,
+                              step: 1 %>
+      </div>
+      <p class="text-xs text-secondary"><%= t(".cash_plan.pay_period_hint") %></p>
+    </fieldset>
+
+    <div class="space-y-3">
+      <div>
+        <p class="text-sm font-medium text-primary"><%= t(".cash_plan.manual_schedule") %></p>
+        <p class="mt-1 text-sm text-secondary"><%= t(".cash_plan.manual_schedule_hint") %></p>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <%= form.date_field :next_pay_date,
+                            label: t(".cash_plan.next_pay_date"),
+                            value: @cash_plan_settings["next_pay_date"] %>
+        <%= form.number_field :expected_pay_amount,
+                              label: t(".cash_plan.expected_pay_amount", currency: @user.family.primary_currency_code),
+                              value: @cash_plan_settings["expected_pay_amount"],
+                              min: 0,
+                              step: "0.01" %>
+      </div>
+    </div>
+
+    <div class="flex justify-end">
+      <%= render DS::Button.new(
+        text: t(".cash_plan.save"),
+        type: :submit,
+        class: "w-full justify-center sm:w-auto",
+        data: { paycheck_allocation_target: "submit" }
+      ) %>
+    </div>
+  <% end %>
+<% end %>
 <% if Current.user.admin? %>
   <%= settings_section title: t(".currencies_title", moniker: family_moniker), subtitle: t(".currencies_subtitle", moniker: family_moniker_downcase) do %>
     <% selected_count_translations = t(".selected_currencies_count") %>
