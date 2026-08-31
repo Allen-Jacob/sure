@@ -1,4 +1,4 @@
 ---
-de:
-  passkey_sessions:
-    invalid_credential: Die Anmeldung mit diesem Passkey ist fehlgeschlagen. Versuch es erneut oder verwende dein Passwort.
+  de:
+    passkey_sessions:
+      invalid_credential: Anmeldung mit diesem Passkey fehlgeschlagen. Bitte versuche es erneut oder nutze dein Passwort.

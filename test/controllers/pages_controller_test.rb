@@ -55,6 +55,16 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert @user.reload.dashboard_section_hidden?("cash_plan_budget")
   end
 
+  test "inactive user's existing session is revoked" do
+    session_record = @user.sessions.order(:created_at).last
+    @user.update_column(:active, false)
+
+    get root_path
+
+    assert_redirected_to new_session_path
+    assert_not Session.exists?(session_record.id)
+  end
+
   test "update_preferences persists dashboard section layout height" do
     patch "/dashboard/preferences", params: {
       preferences: { dashboard_section_layout: { net_worth_chart: { height: "compact" } } }
