@@ -3,6 +3,8 @@ require "test_helper"
 class UserTest < ActiveSupport::TestCase
   include ActiveJob::TestHelper
 
+  uses_transaction :test_first_user_role_lock_makes_concurrent_family_creators_deterministic
+
   def setup
     @user = users(:family_admin)
   end
@@ -850,6 +852,76 @@ class UserTest < ActiveSupport::TestCase
     assert_equal "super_admin", User.role_for_new_family_creator(fallback_role: "super_admin")
   end
 
+  test "first user role lock makes concurrent family creators deterministic" do
+    created_family_ids = Queue.new
+
+    User.connection.disable_referential_integrity { User.delete_all }
+    first_user_saved = Queue.new
+    creator_errors = Queue.new
+
+    first_creator = Thread.new do
+      signaled = false
+
+      ActiveRecord::Base.connection_pool.with_connection do
+        ActiveRecord::Base.transaction do
+          family = Family.create!
+          created_family_ids << family.id
+
+          User.lock_first_user_role!
+          user = User.create!(
+            email: "concurrent-first@example.com",
+            password: user_password_test,
+            family: family,
+            role: User.role_for_new_family_creator
+          )
+          first_user_saved << user.id
+          signaled = true
+          sleep 0.1
+        end
+      end
+    rescue StandardError => e
+      creator_errors << e
+      first_user_saved << nil unless signaled
+    end
+
+    first_user_saved.pop
+    second_creator = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        ActiveRecord::Base.transaction do
+          family = Family.create!
+          created_family_ids << family.id
+
+          User.lock_first_user_role!
+          User.create!(
+            email: "concurrent-second@example.com",
+            password: user_password_test,
+            family: family,
+            role: User.role_for_new_family_creator
+          )
+        end
+      end
+    rescue StandardError => e
+      creator_errors << e
+    end
+
+    [ first_creator, second_creator ].each(&:join)
+    raise creator_errors.pop(true) unless creator_errors.empty?
+
+    assert_equal 1, User.where(role: :super_admin).count
+    assert User.find_by(email: "concurrent-first@example.com").super_admin?
+    assert User.find_by(email: "concurrent-second@example.com").admin?
+  ensure
+    [ first_creator, second_creator ].compact.each(&:join)
+
+    family_ids = []
+    family_ids << created_family_ids.pop(true) until created_family_ids.empty?
+
+    User.connection.disable_referential_integrity do
+      User.where(email: %w[concurrent-first@example.com concurrent-second@example.com]).delete_all
+      Family.where(id: family_ids).delete_all if family_ids.any?
+    end
+  end
+
   # Preview features preference tests
   test "preview_features_enabled? defaults to false" do
     @user.update!(preferences: {})
@@ -979,5 +1051,45 @@ class UserTest < ActiveSupport::TestCase
     admin2.update!(role: :super_admin)
 
     assert admin1.update(role: :member)
+  end
+
+  test "deactivating a user revokes their API keys, access tokens, and authorization grants" do
+    user = users(:family_member)
+    api_key = ApiKey.create!( # pipelock:ignore
+      user: user,
+      name: "Test Key",
+      display_key: "test_revoke_key_#{SecureRandom.hex(8)}",
+      scopes: [ "read" ]
+    )
+    app = Doorkeeper::Application.create!(
+      name: "Test App #{SecureRandom.hex(4)}",
+      redirect_uri: "https://example.com/callback",
+      confidential: false
+    )
+    token = Doorkeeper::AccessToken.create!( # pipelock:ignore
+      application: app,
+      resource_owner_id: user.id,
+      scopes: "read_write",
+      expires_in: 1.year
+    )
+    # An unexchanged authorization code — the step before a token is minted,
+    # which /oauth/token would otherwise still accept post-deactivation.
+    grant = Doorkeeper::AccessGrant.create!(
+      application: app,
+      resource_owner_id: user.id,
+      redirect_uri: app.redirect_uri,
+      expires_in: 10.minutes,
+      scopes: "read_write"
+    )
+
+    assert api_key.active?
+    assert_nil token.revoked_at
+    assert_nil grant.revoked_at
+
+    user.deactivate
+
+    assert api_key.reload.revoked?
+    assert token.reload.revoked_at.present?
+    assert grant.reload.revoked_at.present?
   end
 end

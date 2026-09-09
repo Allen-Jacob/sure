@@ -78,6 +78,14 @@ class User < ApplicationRecord
   # Returns the appropriate role for a new user creating a family.
   # The very first user of an instance becomes super_admin; subsequent users
   # get the specified admin-capable fallback role.
+  # Keep this one-key advisory lock stable across deploys so old and new app
+  # processes serialize first-user role selection on the same database lock.
+  FIRST_USER_ROLE_LOCK_KEY = 8_391_247
+
+  def self.lock_first_user_role!
+    connection.execute(sanitize_sql_array([ "SELECT pg_advisory_xact_lock(?)", FIRST_USER_ROLE_LOCK_KEY ]))
+  end
+
   def self.role_for_new_family_creator(fallback_role: :admin)
     fallback_role = fallback_role.to_s.in?(%w[admin super_admin]) ? fallback_role : :admin
 
@@ -237,6 +245,7 @@ class User < ApplicationRecord
   before_destroy :ensure_not_last_super_admin_on_destroy
 
   after_update_commit :purge_later, if: -> { saved_change_to_active?(from: true, to: false) }
+  after_update_commit :revoke_all_access_tokens, if: -> { saved_change_to_active?(from: true, to: false) }
 
   def deactivate
     return true unless active?
@@ -376,6 +385,29 @@ class User < ApplicationRecord
     end
 
     provider.public_send(item_association.name) if item_association
+  end
+
+  # Revokes mobile/third-party API access alongside the web-session
+  # invalidation above. Without this, a deactivated user's existing
+  # Doorkeeper tokens and API keys stay valid on the wire — currently
+  # harmless only because Api::V1::BaseController/McpController re-check
+  # active? on every request, but that's a second, independent safeguard,
+  # not a substitute for actually revoking the credentials. Also revokes
+  # unexchanged OAuth authorization grants — /oauth/token doesn't go
+  # through the cookie authenticator, so a still-valid grant issued right
+  # before deactivation could otherwise be exchanged for a fresh token
+  # afterward.
+  def revoke_all_access_tokens
+    tokens_revoked = Doorkeeper::AccessToken.where(resource_owner_id: id, revoked_at: nil).update_all(revoked_at: Time.current)
+    grants_revoked = Doorkeeper::AccessGrant.where(resource_owner_id: id, revoked_at: nil).update_all(revoked_at: Time.current)
+    keys_revoked = api_keys.active.visible.update_all(revoked_at: Time.current)
+
+    if tokens_revoked > 0 || grants_revoked > 0 || keys_revoked > 0
+      Rails.logger.warn(
+        "[AUTH] Revoked #{tokens_revoked} access token(s), #{grants_revoked} authorization grant(s), " \
+        "and #{keys_revoked} API key(s) for deactivated user_id=#{id}"
+      )
+    end
   end
 
   def purge
