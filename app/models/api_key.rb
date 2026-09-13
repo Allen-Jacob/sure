@@ -10,6 +10,7 @@ class ApiKey < ApplicationRecord
 
   # Constants
   SOURCES = [ "web", "mobile", "monitoring" ].freeze
+  SCOPES = %w[read read_write transactions:create].freeze
   DEMO_MONITORING_KEY = "demo_monitoring_key_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
 
   # Validations
@@ -102,8 +103,8 @@ class ApiKey < ApplicationRecord
         errors.add(:scopes, "must include at least one permission")
       elsif scopes.is_a?(Array) && scopes.length > 1
         errors.add(:scopes, "can only have one permission level")
-      elsif scopes.is_a?(Array) && !%w[read read_write].include?(scopes.first)
-        errors.add(:scopes, "must be either 'read' or 'read_write'")
+      elsif scopes.is_a?(Array) && !SCOPES.include?(scopes.first)
+        errors.add(:scopes, "must be 'read', 'read_write', or 'transactions:create'")
       end
     end
 

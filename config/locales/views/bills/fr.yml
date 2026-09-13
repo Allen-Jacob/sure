@@ -244,6 +244,7 @@ fr:
       income_amount: "%{amount} de revenus"
       income_detected: Détecté automatiquement, ne définit pas les jours de paie
       income_next_payday: prochain le %{date}
+      agendrix_estimate: Estimée à partir de votre horaire Agendrix
       income_paused: En pause, non planifié
       income_section_title: Calendrier de revenus
       income_source_count:

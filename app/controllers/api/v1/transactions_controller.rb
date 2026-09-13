@@ -5,7 +5,8 @@ class Api::V1::TransactionsController < Api::V1::BaseController
 
   # Ensure proper scope authorization for read vs write access
   before_action :ensure_read_scope, only: [ :index, :show ]
-  before_action :ensure_write_scope, only: [ :create, :update, :destroy, :split ]
+  before_action :ensure_create_scope, only: :create
+  before_action :ensure_write_scope, only: [ :update, :destroy, :split ]
   before_action :set_transaction, only: [ :show, :update, :destroy, :split ]
 
   def index
@@ -45,6 +46,8 @@ class Api::V1::TransactionsController < Api::V1::BaseController
     # Rails will automatically use app/views/api/v1/transactions/index.json.jbuilder
     render :index
 
+  rescue Api::V1::BaseController::InvalidFilterError => e
+    render_validation_error(e.message)
   rescue => e
     Rails.logger.error "TransactionsController#index error: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
@@ -92,6 +95,7 @@ class Api::V1::TransactionsController < Api::V1::BaseController
     end
 
     account = family.accounts.writable_by(current_resource_owner).find(account_id_param)
+    return unless validate_family_associations(family)
 
     if idempotency_key_requested? && (existing_entry = existing_idempotent_entry(account))
       return render_existing_idempotent_entry(existing_entry)
@@ -121,6 +125,11 @@ class Api::V1::TransactionsController < Api::V1::BaseController
     else
       raise
     end
+  rescue ActiveRecord::RecordNotFound
+    render json: {
+      error: "not_found",
+      message: "Account not found"
+    }, status: :not_found
   rescue => e
     Rails.logger.error "TransactionsController#create error: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
@@ -132,6 +141,8 @@ class Api::V1::TransactionsController < Api::V1::BaseController
   end
 
   def update
+    return unless validate_family_associations(current_resource_owner.family)
+
     if @entry.split_child? && split_child_financial_fields_changed?
       render json: { error: "validation_failed", message: "Split child amount, date, and type cannot be changed directly." }, status: :unprocessable_entity
       return
@@ -292,6 +303,36 @@ class Api::V1::TransactionsController < Api::V1::BaseController
       authorize_scope!(:write)
     end
 
+    # Existing read_write credentials remain compatible, while public import
+    # clients can use a key that is valid for this action and nothing else.
+    def ensure_create_scope
+      return true if current_scopes.include?("transactions:create")
+
+      authorize_scope!(:write)
+    end
+
+    def validate_family_associations(family)
+      category_id = transaction_params[:category_id].presence
+      if category_id && !family.categories.exists?(id: category_id)
+        render_validation_error("Category does not belong to this family")
+        return false
+      end
+
+      merchant_id = transaction_params[:merchant_id].presence
+      if merchant_id && !family.merchants.exists?(id: merchant_id)
+        render_validation_error("Merchant does not belong to this family")
+        return false
+      end
+
+      tag_ids = Array(transaction_params[:tag_ids]).reject(&:blank?).map(&:to_s).uniq
+      if tag_ids.any? && family.tags.where(id: tag_ids).count != tag_ids.size
+        render_validation_error("One or more tags do not belong to this family")
+        return false
+      end
+
+      true
+    end
+
     def apply_filters(query)
       # Account filtering
       if params[:account_id].present?
@@ -325,21 +366,21 @@ class Api::V1::TransactionsController < Api::V1::BaseController
 
       # Date range filtering
       if params[:start_date].present?
-        query = query.where("entries.date >= ?", Date.parse(params[:start_date]))
+        query = query.where("entries.date >= ?", parse_date_param(:start_date))
       end
 
       if params[:end_date].present?
-        query = query.where("entries.date <= ?", Date.parse(params[:end_date]))
+        query = query.where("entries.date <= ?", parse_date_param(:end_date))
       end
 
       # Amount filtering
       if params[:min_amount].present?
-        min_amount = params[:min_amount].to_f
+        min_amount = decimal_filter_param(:min_amount)
         query = query.where("entries.amount >= ?", min_amount)
       end
 
       if params[:max_amount].present?
-        max_amount = params[:max_amount].to_f
+        max_amount = decimal_filter_param(:max_amount)
         query = query.where("entries.amount <= ?", max_amount)
       end
 
@@ -362,6 +403,13 @@ class Api::V1::TransactionsController < Api::V1::BaseController
       end
 
       query
+    end
+
+    def decimal_filter_param(key)
+      value = BigDecimal(params[key].to_s, exception: false)
+      raise Api::V1::BaseController::InvalidFilterError, "#{key} must be a number" unless value&.finite?
+
+      value
     end
 
     def apply_search(query)
@@ -528,7 +576,8 @@ class Api::V1::TransactionsController < Api::V1::BaseController
     end
 
     def calculate_signed_amount
-      amount = transaction_params[:amount].to_f
+      amount = BigDecimal(transaction_params[:amount].to_s, exception: false)
+      return nil unless amount&.finite?
       nature = transaction_params[:nature]
 
       case nature&.downcase

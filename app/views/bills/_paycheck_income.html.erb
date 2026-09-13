@@ -25,6 +25,19 @@
   <% end %>
 
   <div class="bg-container rounded-xl shadow-border-xs mt-3 px-4 py-2">
+    <% if @agendrix_income %>
+      <div class="flex items-center justify-between gap-3 py-2">
+        <div class="min-w-0">
+          <p class="text-sm text-primary truncate"><%= @agendrix_income.recurring_transaction.display_name %></p>
+          <p class="text-xs text-secondary truncate">
+            <%= t("bills.paycheck.agendrix_estimate") %>
+            &middot; <%= t("bills.paycheck.income_next_payday", date: l(@agendrix_income.due_on, format: :short)) %>
+          </p>
+        </div>
+        <p class="text-sm text-primary tabular-nums privacy-sensitive shrink-0"><%= format_money(@agendrix_income.resolved_expected_amount_money) %></p>
+      </div>
+    <% end %>
+
     <% @income_series.each do |series| %>
       <% occurrence = @next_income_by_series[series.id] %>
       <div class="flex items-center justify-between gap-3 py-2">

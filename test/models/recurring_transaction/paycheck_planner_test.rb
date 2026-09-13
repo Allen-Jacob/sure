@@ -16,6 +16,49 @@ class RecurringTransaction::PaycheckPlannerTest < ActiveSupport::TestCase
     assert_nil Planner.new(@family, user: @user).plan
   end
 
+  test "Agendrix forecasts define income-plan paydays without a manual income series" do
+    source = Dashboard::PayrollForecast::PlannerSource.new(display_name: "Agendrix")
+    occurrences = [ 3, 17, 31 ].map do |days|
+      Dashboard::PayrollForecast::PlannerOccurrence.new(
+        recurring_transaction_id: "agendrix",
+        due_on: Date.current + days,
+        resolved_expected_amount_money: Money.new(1200, @family.currency),
+        recurring_transaction: source
+      )
+    end
+    forecast = mock
+    Dashboard::PayrollForecast.expects(:new).with(user: @user, currency: @family.currency).returns(forecast)
+    forecast.expects(:planner_occurrences).returns(occurrences)
+
+    plan = Planner.new(@family, user: @user).plan(periods_limit: 2)
+
+    assert_equal Date.current + 3, plan[1].starts_on
+    assert_equal 1200, plan[1].income
+    assert_equal [ "Agendrix" ], plan[1].income_sources
+  end
+
+  test "Agendrix replaces a same-day manually named paycheck" do
+    payday = Date.current + 3
+    create_series(name: "Paycheck", amount: -900, due: payday, preset: "weekly", income: true)
+    source = Dashboard::PayrollForecast::PlannerSource.new(display_name: "Agendrix")
+    occurrences = [ 3, 10, 17, 24 ].map do |days|
+      Dashboard::PayrollForecast::PlannerOccurrence.new(
+        recurring_transaction_id: "agendrix",
+        due_on: Date.current + days,
+        resolved_expected_amount_money: Money.new(1200, @family.currency),
+        recurring_transaction: source
+      )
+    end
+    forecast = mock
+    Dashboard::PayrollForecast.expects(:new).with(user: @user, currency: @family.currency).returns(forecast)
+    forecast.expects(:planner_occurrences).returns(occurrences)
+
+    plan = Planner.new(@family, user: @user).plan(periods_limit: 2)
+
+    assert_equal 1200, plan[1].income
+    assert_equal [ "Agendrix" ], plan[1].income_sources
+  end
+
   test "auto-detected inflows never define paydays" do
     penny = create_series(name: "To Car Vault", amount: -0.01, due: Date.current + 2, income: true)
     penny.update!(manual: false)

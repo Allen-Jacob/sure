@@ -223,6 +223,7 @@ class BillsController < ApplicationController
                               .order(:name)
                               .to_a
       @next_income_by_series = planner.next_income_by_series
+      @agendrix_income = @next_income_by_series["agendrix"]
 
       # The next income EVENT, which is not the same fact as any one series'
       # next payday: two sources can land on the same day.
@@ -237,7 +238,8 @@ class BillsController < ApplicationController
       @income_needs_attention = @income_series.any? { |series| !paycheck_income_plans?(series) }
     end
 
-    # Only active, manually declared income defines paydays.
+    # Only active, manually declared income defines paydays. Agendrix is an
+    # explicitly configured virtual source and is handled by the planner.
     def paycheck_income_plans?(series)
       series.active? && series.manual?
     end

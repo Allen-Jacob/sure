@@ -20,7 +20,7 @@
 
   <%= render "bills/ai_prompts", prompts: %w[due_before_paycheck safe_to_spend] %>
 
-  <% if @income_series.any? %>
+  <% if @income_series.any? || @agendrix_income %>
     <%= render "bills/paycheck_income" %>
   <% end %>
 

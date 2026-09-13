@@ -278,7 +278,13 @@ class ApiKeyTest < ActiveSupport::TestCase
   test "should validate scope values" do
     @api_key.scopes = [ "invalid_scope" ]
     assert_not @api_key.valid?
-    assert_includes @api_key.errors[:scopes], "must be either 'read' or 'read_write'"
+    assert_includes @api_key.errors[:scopes], "must be 'read', 'read_write', or 'transactions:create'"
+  end
+
+  test "allows a transaction-create-only scope" do
+    @api_key.scopes = [ "transactions:create" ]
+
+    assert @api_key.valid?
   end
 
   test "should prevent destroying demo monitoring api key" do

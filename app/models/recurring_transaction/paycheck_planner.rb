@@ -4,7 +4,8 @@ class RecurringTransaction
   # reports what is due inside it, what it holds for a later bill that outgrows
   # its own paycheck, and what is safe once both are taken out.
   #
-  # Only manually declared income defines paydays; detected inflows never do.
+  # Only explicitly configured income defines paydays: manual income series or
+  # the user's private Agendrix payroll forecast. Detected inflows never do.
   class PaycheckPlanner
     # `remaining_total` is the whole obligation this share is a slice of,
     # pre-converted to the family currency so no view has to convert money.
@@ -75,6 +76,10 @@ class RecurringTransaction
       @family = family
       @user = user
       @unconvertible_count = 0
+      @agendrix_income_occurrences = Dashboard::PayrollForecast.new(
+        user: user,
+        currency: family.currency
+      ).planner_occurrences
     end
 
     # nil when no income schedule is declared (the view prompts for one).
@@ -122,11 +127,13 @@ class RecurringTransaction
     end
 
     private
-      # Declared income only. Sign alone proves nothing: a recurring one-cent
-      # balance transfer is income by sign and a payday by nothing.
+      # Explicit income only. Sign alone proves nothing: a recurring one-cent
+      # balance transfer is income by sign and a payday by nothing. When a
+      # manual payroll series lands on an Agendrix payday, prefer the dynamic
+      # Agendrix estimate so the same pay is never counted twice.
       def upcoming_income_occurrences
-        @upcoming_income_occurrences ||=
-          family.recurring_occurrences
+        @upcoming_income_occurrences ||= begin
+          declared = family.recurring_occurrences
                 .open_status
                 .joins(:recurring_transaction)
                 .where(recurring_transactions: { status: :active, bill_type: :income, manual: true })
@@ -135,6 +142,21 @@ class RecurringTransaction
                 .includes(:recurring_transaction)
                 .order(:due_on)
                 .to_a
+
+          agendrix_dates = @agendrix_income_occurrences.map(&:due_on).to_set
+          declared.reject! do |occurrence|
+            agendrix_dates.include?(occurrence.due_on) && payroll_named?(occurrence.recurring_transaction.display_name)
+          end
+
+          (declared + @agendrix_income_occurrences).sort_by(&:due_on)
+        end
+      end
+
+      def payroll_named?(name)
+        normalized = I18n.transliterate(name.to_s).downcase
+        Dashboard::PayrollForecast::PAYROLL_KEYWORDS.any? do |keyword|
+          normalized.include?(I18n.transliterate(keyword))
+        end
       end
 
       # Today up to the first paycheck is its own period, then one per paycheck.

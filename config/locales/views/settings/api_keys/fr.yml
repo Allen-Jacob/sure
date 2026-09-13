@@ -65,6 +65,8 @@ fr:
         scope_read_only_description: Consultez vos comptes, transactions et soldes
         scope_read_write: Lire/écrire
         scope_read_write_description: Consultez vos données et créez de nouvelles transactions
+        scope_transactions_create: Ajouter des transactions seulement
+        scope_transactions_create_description: Permet uniquement l’ajout par POST; aucune lecture, modification, suppression, synchronisation ou autre ressource API
         security_warning: Votre clé API sera affichée uniquement une fois après sa création. Gardez-la en sécurité et ne la partagez jamais publiquement. Si vous l'avez perdue, vous devrez en créer une nouvelle.
         security_warning_body: Votre clé API ne sera affichée qu'une seule fois après sa création. Assurez-vous de la copier et de la stocker en toute sécurité. Toute personne ayant accès à cette clé peut accéder à vos données selon les autorisations que vous sélectionnez.
         security_warning_title: Avertissement important de sécurité
@@ -77,6 +79,7 @@ fr:
         never_used: Jamais utilisé
         scope_read_only: Lecture seule
         scope_read_write: Lecture/Écriture
+        scope_transactions_create: Ajout de transactions seulement
       show:
         current_api_key:
           active: Active
