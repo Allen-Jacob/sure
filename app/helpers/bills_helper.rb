@@ -175,10 +175,11 @@ module BillsHelper
   def paycheck_income_headline(next_income)
     occurrences = next_income[:occurrences]
     single = occurrences.one? ? occurrences.first.recurring_transaction : nil
+    frequency = frequency_label(single) if single.is_a?(RecurringTransaction)
 
     parts = [
       single ? single.display_name : t("bills.paycheck.income_source_count", count: occurrences.size),
-      single ? frequency_label(single) : nil,
+      frequency,
       t("bills.paycheck.next_on", date: l(next_income[:date], format: :short)),
       next_income[:total] ? format_money(next_income[:total]) : nil
     ]

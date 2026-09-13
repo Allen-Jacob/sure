@@ -806,6 +806,26 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
       "the stale column date must not appear anywhere on the page")
   end
 
+  test "the paycheck view renders when Agendrix is the only income source" do
+    calendar_url = "https://app.agendrix.com/api/calendar/11111111-2222-3333-4444-555555555555.ics"
+    @user.update_dashboard_cash_plan_settings({
+      "work_calendar_url" => calendar_url,
+      "hourly_pay_rate" => "22.50",
+      "pay_period_anchor_date" => Date.current.to_s,
+      "payday_offset_days" => 5,
+      "pay_cycle_days" => 14
+    })
+    calendar = mock
+    Dashboard::PayrollCalendar.expects(:new).with(url: calendar_url).returns(calendar)
+    calendar.stubs(:hours_between).returns(40.to_d)
+
+    get bills_url(view: "paycheck")
+
+    assert_response :success
+    assert_match I18n.t("pages.dashboard.cash_plan.paycheck_agendrix"), response.body
+    assert_match I18n.t("bills.paycheck.agendrix_estimate"), response.body
+  end
+
   # An auto-detected inflow sat in the list looking exactly like a real payday
   # source while moving no number on the page.
   test "income the planner cannot use says so" do
