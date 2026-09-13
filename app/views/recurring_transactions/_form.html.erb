@@ -60,6 +60,16 @@
           :id, :name,
           { label: income ? t(".income_account_label") : t(".account_label"), include_blank: t(".account_blank") } %>
 
+    <% unless income %>
+      <div class="space-y-2">
+        <%= f.collection_select :payer_id,
+              Current.family.users.order(:first_name, :last_name, :email),
+              :id, :display_name,
+              { label: t(".payer_label"), include_blank: t(".payer_blank") } %>
+        <p class="text-xs text-secondary"><%= t(".payer_hint") %></p>
+      </div>
+    <% end %>
+
     <%# Which kind this is was decided by the entry point that opened the
         dialog, so the form only has to carry the answer. Offering it as a
         checkbox here asked a question the dialog had already answered in its
@@ -136,6 +146,14 @@
     <%= render DS::Disclosure.new(title: t(".more_options"), align: "left") do %>
       <div class="space-y-4 pt-2">
       <% unless income %>
+        <div class="space-y-2">
+          <%= f.number_field :notify_days_before,
+                label: t(".notify_days_before_label"),
+                placeholder: RecurringOccurrence::DEFAULT_NOTIFY_DAYS,
+                min: 0, max: 30, step: 1 %>
+          <p class="text-xs text-secondary"><%= t(".notify_days_before_hint", default_days: RecurringOccurrence::DEFAULT_NOTIFY_DAYS) %></p>
+        </div>
+
         <div class="space-y-2">
           <%= f.text_field :payment_url,
                 label: t(".payment_url_label"),

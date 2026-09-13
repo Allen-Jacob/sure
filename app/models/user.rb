@@ -38,6 +38,7 @@ class User < ApplicationRecord
   has_many :shared_accounts, through: :account_shares, source: :account
   has_many :budget_shares_given, class_name: "BudgetShare", foreign_key: :owner_id, inverse_of: :owner, dependent: :destroy
   has_many :budget_shares_received, class_name: "BudgetShare", foreign_key: :viewer_id, inverse_of: :viewer, dependent: :destroy
+  has_many :recurring_transactions_paid, class_name: "RecurringTransaction", foreign_key: :payer_id, dependent: :nullify
   accepts_nested_attributes_for :family, update_only: true
 
   MFA_BACKUP_CODE_COUNT = 8

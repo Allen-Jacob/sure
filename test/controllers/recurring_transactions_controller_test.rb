@@ -113,6 +113,35 @@ class RecurringTransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "https://pay.example.com/bill", @recurring_transaction.reload.payment_url
   end
 
+  test "create assigns a bill to a payer in the household and sets its reminder" do
+    payer = users(:family_member)
+
+    assert_difference -> { @family.recurring_transactions.count }, 1 do
+      post recurring_transactions_url, params: {
+        recurring_transaction: {
+          name: "Phone plan", amount: "45", first_due_on: Date.new(Date.current.year + 1, 4, 30),
+          frequency_preset: "monthly", payer_id: payer.id, notify_days_before: "0"
+        }
+      }
+    end
+
+    bill = @family.recurring_transactions.order(:created_at).last
+    assert_equal payer, bill.payer
+    assert_equal 0, bill.notify_days_before
+    assert_equal 30, bill.expected_day_of_month
+  end
+
+  test "update cannot assign a payer from another household" do
+    outsider = users(:inactive_trial_user)
+
+    patch recurring_transaction_url(@recurring_transaction), params: {
+      recurring_transaction: { payer_id: outsider.id }
+    }
+
+    assert_response :unprocessable_entity
+    assert_nil @recurring_transaction.reload.payer
+  end
+
   test "new renders the create dialog in a single modal frame" do
     get new_recurring_transaction_url, headers: { "Turbo-Frame" => "modal" }
 

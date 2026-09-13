@@ -18,6 +18,31 @@ class BillsFeedsControllerTest < ActionDispatch::IntegrationTest
     assert_match "Rent", response.body
   end
 
+  test "the feed names the household payer and includes the configured reminder" do
+    bill = @family.recurring_transactions.find_by!(name: "Rent")
+    bill.update!(payer: users(:family_member), notify_days_before: 0)
+
+    get bills_feed_url(token: @family.bills_feed_token_for(@user))
+
+    assert_response :success
+    assert_match "paid by Jakob Dylan", response.body
+    assert_match "BEGIN:VALARM", response.body
+    assert_match "TRIGGER:-P0D", response.body
+  end
+
+  test "assigning another household payer does not hide the bill from the member" do
+    member = users(:family_member)
+    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
+    bill = @family.recurring_transactions.find_by!(name: "Rent")
+    bill.update!(account: nil, payer: @user)
+
+    get bills_feed_url(token: @family.bills_feed_token_for(member))
+
+    assert_response :success
+    assert_match "Rent", response.body
+    assert_match "paid by Bob Dylan", response.body
+  end
+
   test "an unknown token is not found" do
     get bills_feed_url(token: "nonsense")
 

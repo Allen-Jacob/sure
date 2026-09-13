@@ -46,6 +46,8 @@ class RecurringTransaction
         payment_url: attrs[:payment_url],
         autopay: ActiveModel::Type::Boolean.new.cast(attrs[:autopay]) || false,
         notes: attrs[:notes],
+        payer: family.users.find_by(id: attrs[:payer_id]),
+        notify_days_before: attrs[:notify_days_before].presence,
         status: "active",
         manual: true,
         occurrence_count: 0
@@ -58,6 +60,11 @@ class RecurringTransaction
       # would otherwise become an accountless bill in the family currency.
       if attrs[:account_id].present? && account.nil?
         recurring.errors.add(:base, I18n.t("recurring_transactions.create.account_invalid"))
+        return recurring
+      end
+
+      if attrs[:payer_id].present? && recurring.payer.nil?
+        recurring.errors.add(:payer, :invalid)
         return recurring
       end
 

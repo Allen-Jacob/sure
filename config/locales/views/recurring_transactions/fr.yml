@@ -86,6 +86,11 @@ fr:
       payment_url_hint: L'adresse où vous allez pour régler cette facture. S'ouvre dans un nouvel onglet depuis vos listes de récurrences et d'échéances à venir.
       payment_url_label: Lien de paiement
       payment_url_placeholder: banque.example.com/payer
+      payer_blank: Non attribuée
+      payer_label: Qui paie cet abonnement ou cette facture ?
+      payer_hint: Elle restera visible dans vos factures et votre calendrier, même si une autre personne du foyer la paie.
+      notify_days_before_label: Me rappeler combien de jours avant
+      notify_days_before_hint: Laissez vide pour le rappel par défaut (%{default_days} jours). Utilisez 0 pour le jour même.
       renews_on_label: Renouvellement le
       submit: Enregistrer la facture
       submit_income: Enregistrer le revenu

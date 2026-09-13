@@ -360,6 +360,7 @@ class RecurringTransactionsController < ApplicationController
     def recurring_transaction_params
       params.require(:recurring_transaction).permit(
         :payment_url, :autopay, :notes, :bill_type, :category_id,
+        :notify_days_before,
         :renews_on, :trial_ends_on, :cancelled_on, :end_after_count,
         :frequency_preset, :frequency_day_of_month, :frequency_second_day_of_month,
         :frequency_weekday, :frequency_month_of_year
@@ -367,10 +368,11 @@ class RecurringTransactionsController < ApplicationController
     end
 
     def new_recurring_transaction_params
-      params.require(:recurring_transaction).permit(
+      attrs = params.require(:recurring_transaction)
+      attrs.permit(
         :name, :amount, :account_id, :first_due_on, :frequency_preset,
-        :payment_url, :autopay, :notes, :is_income
-      )
+        :payment_url, :autopay, :notes, :is_income, :notify_days_before
+      ).merge(payer_id: attrs[:payer_id])
     end
 
     def build_declared_bill
@@ -436,6 +438,17 @@ class RecurringTransactionsController < ApplicationController
           @recurring_transaction.account = account
         else
           @recurring_transaction.errors.add(:account, :invalid)
+        end
+      end
+
+
+      if attrs.key?(:payer_id)
+        if attrs[:payer_id].blank?
+          @recurring_transaction.payer = nil
+        elsif (payer = Current.family.users.find_by(id: attrs[:payer_id]))
+          @recurring_transaction.payer = payer
+        else
+          @recurring_transaction.errors.add(:payer, :invalid)
         end
       end
     end

@@ -60,6 +60,9 @@
     <div class="min-w-0 flex-1">
       <p class="text-primary text-sm font-medium truncate group-hover:underline">
         <%= series.display_name %>
+        <% if series.payer %>
+          <span class="text-xs text-secondary font-normal">&middot; <%= t("bills.paid_by", name: series.payer.display_name) %></span>
+        <% end %>
         <% if series.transfer? %>
           <span class="text-xs text-secondary font-normal"><%= t("bills.debt_payment") %></span>
         <% end %>

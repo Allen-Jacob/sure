@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_10_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_13_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -1920,6 +1920,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_130000) do
     t.integer "occurrence_count", default: 0, null: false
     t.integer "overdue_grace_days"
     t.string "payment_url"
+    t.uuid "payer_id"
     t.date "renews_on"
     t.uuid "replaced_by_id"
     t.string "status", default: "active", null: false
@@ -1937,6 +1938,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_130000) do
     t.index ["family_id", "status"], name: "index_recurring_transactions_on_family_id_and_status"
     t.index ["family_id"], name: "index_recurring_transactions_on_family_id"
     t.index ["merchant_id"], name: "index_recurring_transactions_on_merchant_id"
+    t.index ["payer_id"], name: "index_recurring_transactions_on_payer_id"
     t.index ["next_expected_date"], name: "index_recurring_transactions_on_next_expected_date"
     t.check_constraint "destination_account_id IS NULL OR account_id IS NOT NULL", name: "chk_recurring_txns_transfer_requires_source"
     t.check_constraint "destination_account_id IS NULL OR destination_account_id <> account_id", name: "chk_recurring_txns_transfer_distinct_accounts"
@@ -2790,6 +2792,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_130000) do
   add_foreign_key "recurring_transactions", "categories", on_delete: :nullify
   add_foreign_key "recurring_transactions", "families"
   add_foreign_key "recurring_transactions", "merchants"
+  add_foreign_key "recurring_transactions", "users", column: "payer_id", on_delete: :nullify
   add_foreign_key "recurring_transactions", "recurring_transactions", column: "replaced_by_id", on_delete: :nullify
   add_foreign_key "redbark_accounts", "redbark_items"
   add_foreign_key "redbark_items", "families"

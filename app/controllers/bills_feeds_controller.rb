@@ -33,7 +33,7 @@ class BillsFeedsController < ApplicationController
                         .where(recurring_transactions: { status: :active })
                         .where("recurring_transactions.amount > 0")
                         .where(due_on: Date.current..(Date.current + HORIZON_DAYS))
-                        .includes(:recurring_transaction)
+                        .includes(recurring_transaction: :payer)
                         .order(:due_on)
 
     I18n.with_locale(family.locale.presence || I18n.default_locale) do
@@ -54,8 +54,8 @@ class BillsFeedsController < ApplicationController
           UID:#{occurrence.id}@sure-bills
           DTSTAMP:#{Time.current.utc.strftime("%Y%m%dT%H%M%SZ")}
           DTSTART;VALUE=DATE:#{occurrence.effective_due_on.strftime("%Y%m%d")}
-          SUMMARY:#{escape_ical(series.display_name)} (#{escape_ical(amount)})
-          END:VEVENT
+          SUMMARY:#{escape_ical(event_summary(series, amount))}
+          #{alarm_for(series)}END:VEVENT
         EVENT
       end
 
@@ -67,6 +67,24 @@ class BillsFeedsController < ApplicationController
         #{events.join}
         END:VCALENDAR
       ICAL
+    end
+
+    def event_summary(series, amount)
+      summary = "#{series.display_name} (#{amount})"
+      return summary unless series.payer
+
+      "#{summary} · #{I18n.t('bills.paid_by', name: series.payer.display_name)}"
+    end
+
+    def alarm_for(series)
+      days = series.notify_days_before || RecurringOccurrence::DEFAULT_NOTIFY_DAYS
+      <<~ALARM
+        BEGIN:VALARM
+        TRIGGER:-P#{days}D
+        ACTION:DISPLAY
+        DESCRIPTION:#{escape_ical(series.display_name)}
+        END:VALARM
+      ALARM
     end
 
     def escape_ical(text)
