@@ -1,6 +1,6 @@
-# GitHub only runs schedule and workflow_dispatch workflows that exist on the
-# repository's default branch. Keep custom-dashboard as the default branch so
-# this file can live here while main remains an exact mirror of upstream.
+# GitHub only runs scheduled workflows that exist on the default branch. Keep
+# this file on custom-dashboard and stage upstream commits on a dedicated
+# automation branch; the protected main branch is deliberately not rewritten.
 name: Sync Sure Upstream
 
 on:
@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  MIRROR_BRANCH: main
+  MIRROR_BRANCH: upstream-sync
   CUSTOM_BRANCH: custom-dashboard
 
 jobs:
@@ -39,10 +39,10 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout mirror branch
+      - name: Checkout custom branch
         uses: actions/checkout@v6
         with:
-          ref: main
+          ref: custom-dashboard
           fetch-depth: 0
           token: ${{ secrets.AUTOMATION_TOKEN }}
 
@@ -51,20 +51,26 @@ jobs:
           git remote add upstream https://github.com/we-promise/sure.git
           git fetch --no-tags upstream main
 
-      - name: Fast-forward mirror branch
+      - name: Update upstream staging branch
         shell: bash
         run: |
           set -euo pipefail
 
-          if ! git merge-base --is-ancestor HEAD upstream/main; then
-            echo "::error::origin/main contains commits that are not in we-promise/sure:main. Refusing to overwrite them."
-            exit 1
+          upstream_sha="$(git rev-parse upstream/main)"
+          mirror_sha="$(git ls-remote --heads origin refs/heads/$MIRROR_BRANCH | awk '{print $1}')"
+
+          if [[ "$mirror_sha" == "$upstream_sha" ]]; then
+            echo "$MIRROR_BRANCH already matches upstream/main."
+            exit 0
           fi
 
-          git merge --ff-only upstream/main
-          git push origin HEAD:refs/heads/main
+          # This branch is owned exclusively by the automation. A lease still
+          # prevents overwriting a concurrent workflow or an unexpected edit.
+          git push origin \
+            upstream/main:refs/heads/$MIRROR_BRANCH \
+            --force-with-lease=refs/heads/$MIRROR_BRANCH:"$mirror_sha"
 
-          test "$(git rev-parse HEAD)" = "$(git rev-parse upstream/main)"
+          test "$(git ls-remote --heads origin refs/heads/$MIRROR_BRANCH | awk '{print $1}')" = "$upstream_sha"
 
   create-pr:
     name: Create update PR
@@ -100,15 +106,15 @@ jobs:
           set -euo pipefail
 
           git fetch --no-tags origin \
-            +refs/heads/main:refs/remotes/origin/main \
+            +refs/heads/$MIRROR_BRANCH:refs/remotes/origin/$MIRROR_BRANCH \
             +refs/heads/custom-dashboard:refs/remotes/origin/custom-dashboard
 
-          if git merge-base --is-ancestor origin/main origin/custom-dashboard; then
+          if git merge-base --is-ancestor origin/$MIRROR_BRANCH origin/custom-dashboard; then
             echo "changes=false" >> "$GITHUB_OUTPUT"
-            echo "custom-dashboard already contains every commit from main."
+            echo "custom-dashboard already contains every upstream commit."
           else
             echo "changes=true" >> "$GITHUB_OUTPUT"
-            echo "main contains upstream commits not yet integrated into custom-dashboard."
+            echo "Upstream contains commits not yet integrated into custom-dashboard."
           fi
 
       - name: Create or reuse update PR

@@ -7883,6 +7883,8 @@ paths:
       - Transactions
       security:
       - apiKeyAuth: []
+      description: Creates one transaction. Accepts either a read_write API key or
+        the narrower transactions:create API-key scope.
       parameters: []
       responses:
         '201':
@@ -8089,6 +8091,76 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+  "/api/v1/transactions/{id}/split":
+    parameters:
+    - name: id
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+      description: Transaction ID
+    post:
+      summary: Split a transaction
+      tags:
+      - Transactions
+      security:
+      - apiKeyAuth: []
+      description: Replaces one transaction with two or more categorized child transactions.
+        Requires read_write scope.
+      parameters: []
+      responses:
+        '201':
+          description: transaction split
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - transactions
+                properties:
+                  transactions:
+                    type: array
+                    minItems: 2
+                    items:
+                      "$ref": "#/components/schemas/Transaction"
+        '422':
+          description: split validation error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                split:
+                  type: object
+                  properties:
+                    splits:
+                      type: array
+                      minItems: 2
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          amount:
+                            type: number
+                            exclusiveMinimum: 0
+                          category_id:
+                            type: string
+                            format: uuid
+                            nullable: true
+                        required:
+                        - amount
+                  required:
+                  - splits
+              required:
+              - split
+        required: true
   "/api/v1/transfers":
     get:
       summary: List transfers

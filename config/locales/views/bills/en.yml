@@ -163,6 +163,7 @@ en:
       income_paused: Paused, not planned
       income_detected: Detected automatically, does not set paydays
       income_next_payday: "next %{date}"
+      agendrix_estimate: Estimated from your Agendrix schedule
       income_source_count:
         one: "%{count} income source"
         other: "%{count} income sources"

@@ -18,6 +18,7 @@ en:
         never_used: "Never used"
         scope_read_only: "Read Only"
         scope_read_write: "Read/Write"
+        scope_transactions_create: "Add transactions only"
       index:
         title: "API Keys"
         subtitle: "Manage API keys for programmatic access to your data."
@@ -64,6 +65,8 @@ en:
         scope_read_only_description: "View your accounts, transactions, and balances"
         scope_read_write: "Read/Write"
         scope_read_write_description: "View your data and create new transactions"
+        scope_transactions_create: "Add transactions only"
+        scope_transactions_create_description: "Only POST new transactions; cannot read, edit, delete, sync, or access other API resources"
         scope_details:
           read_accounts: "View account information, balances, and account-level data"
           read_transactions: "View transaction data, categories, and transaction details"

@@ -58,6 +58,18 @@ class Settings::ApiKeysControllerTest < ActionDispatch::IntegrationTest
     assert_includes new_key.scopes, "read_write"
   end
 
+  test "create supports an add-transactions-only key" do
+    assert_difference "ApiKey.count", 1 do
+      post settings_api_keys_path, params: {
+        api_key: { name: "Public importer", scopes: "transactions:create" }
+      }
+    end
+
+    key = @user.api_keys.active.visible.find_by!(name: "Public importer")
+    assert_equal [ "transactions:create" ], key.scopes
+    assert_redirected_to settings_api_key_path(key, newly_created: true)
+  end
+
   test "create rejects blank name" do
     assert_no_difference "ApiKey.count" do
       post settings_api_keys_path, params: {

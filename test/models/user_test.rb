@@ -626,25 +626,28 @@ class UserTest < ActiveSupport::TestCase
     assert_not @user.dashboard_section_collapsed?("net_worth_chart"),
       "Should return false when collapsed_sections key is missing"
 
-    assert_not @user.dashboard_section_hidden?("cash_plan_budget"),
-      "Should return false when hidden_sections key is missing"
+    assert @user.dashboard_section_hidden?("cash_plan_budget"),
+      "Overlapping cash-plan widgets should start hidden"
+    assert_not @user.dashboard_section_hidden?("cash_plan_paycheck"),
+      "The paycheck forecast should remain visible by default"
 
     # dashboard_section_order should return default order when key is missing
     assert_equal %w[
       insights_feed
-      cash_plan_available
       cash_plan_paycheck
-      cash_plan_budget
-      cash_plan_spending
-      cash_plan_credit_card
       cash_plan_allocation
+      cash_plan_credit_card
+      cash_plan_spending
+      net_worth_chart
+      cash_plan_available
+      cash_plan_budget
       cash_plan_goals
       cash_plan_purchases
       cash_plan_categories
       cash_plan_review
       money_flow
+      spending_trend
       outflows_donut
-      net_worth_chart
       balance_sheet
       investment_summary
       cashflow_sankey

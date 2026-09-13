@@ -4,7 +4,7 @@ The Transactions API allows external applications to manage financial transactio
 
 ## Generated OpenAPI specification
 
-- The source of truth for the documentation lives in [`spec/requests/api/v1/transactions_spec.rb`](../../spec/requests/api/v1/transactions_spec.rb). These specs authenticate against the Rails stack, exercise every transaction endpoint, and capture real response shapes.
+- The source of truth for the documentation lives in [`spec/requests/api/v1/transactions_spec.rb`](../../spec/requests/api/v1/transactions_spec.rb). These rswag specs describe the endpoints and schemas; behavioral assertions live in the matching Minitest controller tests.
 - Regenerate the OpenAPI document with:
 
   ```sh
@@ -21,7 +21,7 @@ The Transactions API allows external applications to manage financial transactio
 
 ## Authentication requirements
 
-All transaction endpoints require an OAuth2 access token or API key that grants the appropriate scope (`read` or `read_write`).
+All transaction endpoints require an OAuth2 access token or API key. A public importer should use the narrow `transactions:create` API-key scope; it can only call `POST /api/v1/transactions`. Existing `read_write` credentials remain compatible.
 
 ## Available endpoints
 
@@ -29,9 +29,10 @@ All transaction endpoints require an OAuth2 access token or API key that grants 
 | --- | --- | --- |
 | `GET /api/v1/transactions` | `read` | List transactions with filtering and pagination. |
 | `GET /api/v1/transactions/{id}` | `read` | Retrieve a single transaction with full details. |
-| `POST /api/v1/transactions` | `write` | Create a new transaction. |
+| `POST /api/v1/transactions` | `transactions:create` or `read_write` | Create a new transaction. |
 | `PATCH /api/v1/transactions/{id}` | `write` | Update an existing transaction. |
 | `DELETE /api/v1/transactions/{id}` | `write` | Permanently delete a transaction. |
+| `POST /api/v1/transactions/{id}/split` | `write` | Split one transaction into child transactions. |
 
 Refer to the generated [`openapi.yaml`](openapi.yaml) for request/response schemas, reusable components (pagination, errors, accounts, categories, merchants, tags), and security definitions.
 

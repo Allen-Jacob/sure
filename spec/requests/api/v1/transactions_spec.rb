@@ -156,6 +156,7 @@ RSpec.describe 'API V1 Transactions', type: :request do
     post 'Create transaction' do
       tags 'Transactions'
       security [ { apiKeyAuth: [] } ]
+      description 'Creates one transaction. Accepts either a read_write API key or the narrower transactions:create API-key scope.'
       consumes 'application/json'
       produces 'application/json'
       parameter name: :body, in: :body, required: true, schema: {
@@ -368,6 +369,78 @@ RSpec.describe 'API V1 Transactions', type: :request do
         schema '$ref' => '#/components/schemas/ErrorResponse'
 
         let(:id) { SecureRandom.uuid }
+
+        run_test!
+      end
+    end
+  end
+
+
+  path '/api/v1/transactions/{id}/split' do
+    parameter name: :id, in: :path, schema: { type: :string, format: :uuid }, required: true, description: 'Transaction ID'
+
+    post 'Split a transaction' do
+      tags 'Transactions'
+      security [ { apiKeyAuth: [] } ]
+      consumes 'application/json'
+      produces 'application/json'
+      description 'Replaces one transaction with two or more categorized child transactions. Requires read_write scope.'
+      parameter name: :body, in: :body, required: true, schema: {
+        type: :object,
+        properties: {
+          split: {
+            type: :object,
+            properties: {
+              splits: {
+                type: :array,
+                minItems: 2,
+                items: {
+                  type: :object,
+                  properties: {
+                    name: { type: :string },
+                    amount: { type: :number, exclusiveMinimum: 0 },
+                    category_id: { type: :string, format: :uuid, nullable: true }
+                  },
+                  required: %w[amount]
+                }
+              }
+            },
+            required: %w[splits]
+          }
+        },
+        required: %w[split]
+      }
+
+      let(:id) { transaction.id }
+      let(:body) do
+        {
+          split: {
+            splits: [
+              { name: 'Groceries', amount: 50.00, category_id: category.id },
+              { name: 'Household', amount: 25.50 }
+            ]
+          }
+        }
+      end
+
+      response '201', 'transaction split' do
+        schema type: :object,
+               required: %w[transactions],
+               properties: {
+                 transactions: {
+                   type: :array,
+                   minItems: 2,
+                   items: { '$ref' => '#/components/schemas/Transaction' }
+                 }
+               }
+
+        run_test!
+      end
+
+      response '422', 'split validation error' do
+        schema '$ref' => '#/components/schemas/ErrorResponse'
+
+        let(:body) { { split: { splits: [ { amount: 75.50 } ] } } }
 
         run_test!
       end

@@ -73,4 +73,27 @@ class Dashboard::PayrollCalendarTest < ActiveSupport::TestCase
       Dashboard::PayrollCalendar.new(url: CALENDAR_URL).hours_between(Date.new(2026, 8, 2), Date.new(2026, 8, 15))
     end
   end
+
+  test "uses the last successful calendar when Agendrix is temporarily unavailable" do
+    success = stub_request(:get, CALENDAR_URL).to_return(
+      status: 200,
+      body: <<~ICS
+        BEGIN:VCALENDAR
+        BEGIN:VEVENT
+        UID:cached-shift
+        DTSTART:20260810T130000Z
+        DTEND:20260810T170000Z
+        END:VEVENT
+        END:VCALENDAR
+      ICS
+    )
+    calendar = Dashboard::PayrollCalendar.new(url: CALENDAR_URL)
+    assert_equal 4.to_d, calendar.hours_between(Date.new(2026, 8, 2), Date.new(2026, 8, 15))
+    assert_requested success, times: 1
+
+    Rails.cache.delete([ "dashboard", "payroll_calendar", Digest::SHA256.hexdigest(CALENDAR_URL) ])
+    stub_request(:get, CALENDAR_URL).to_return(status: 503, body: "Unavailable")
+
+    assert_equal 4.to_d, calendar.hours_between(Date.new(2026, 8, 2), Date.new(2026, 8, 15))
+  end
 end

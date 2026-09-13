@@ -30,9 +30,18 @@ class Api::V1::TransactionsControllerTest < ActionDispatch::IntegrationTest
       source: "mobile"  # Use different source to allow multiple keys
     )
 
+    @create_only_api_key = ApiKey.create!(
+      user: @user,
+      name: "Test Create-Only Key",
+      scopes: [ "transactions:create" ],
+      display_key: "test_create_#{SecureRandom.hex(8)}",
+      source: "web"
+    )
+
     # Clear any existing rate limit data
     Redis.new.del("api_rate_limit:#{@api_key.id}")
     Redis.new.del("api_rate_limit:#{@read_only_api_key.id}")
+    Redis.new.del("api_rate_limit:#{@create_only_api_key.id}")
   end
 
   # INDEX action tests
@@ -144,6 +153,15 @@ class Api::V1::TransactionsControllerTest < ActionDispatch::IntegrationTest
       transaction_date = Date.parse(transaction["date"])
       assert transaction_date >= start_date
       assert transaction_date <= end_date
+    end
+  end
+
+  test "invalid date and amount filters return validation errors" do
+    [ { start_date: "tomorrow-ish" }, { min_amount: "many" } ].each do |filter|
+      get api_v1_transactions_url, params: filter, headers: api_headers(@api_key)
+
+      assert_response :unprocessable_entity
+      assert_equal "validation_failed", JSON.parse(response.body).fetch("error")
     end
   end
 
@@ -325,6 +343,63 @@ class Api::V1::TransactionsControllerTest < ActionDispatch::IntegrationTest
     response_data = JSON.parse(response.body)
     assert_equal "Test Transaction", response_data["name"]
     assert_equal @account.id, response_data["account"]["id"]
+  end
+
+  test "transaction-create-only key can post but cannot read or modify" do
+    params = {
+      transaction: {
+        account_id: @account.id,
+        name: "Public import",
+        amount: "12.34",
+        date: Date.current,
+        nature: "expense"
+      }
+    }
+
+    assert_difference("@account.entries.count", 1) do
+      post api_v1_transactions_url, params: params, headers: api_headers(@create_only_api_key)
+    end
+    assert_response :created
+    created = JSON.parse(response.body)
+    assert_equal 1234, created.fetch("amount_cents")
+
+    get api_v1_transactions_url, headers: api_headers(@create_only_api_key)
+    assert_response :forbidden
+
+    patch api_v1_transaction_url(@transaction),
+          params: { transaction: { name: "Forbidden update" } },
+          headers: api_headers(@create_only_api_key)
+    assert_response :forbidden
+  end
+
+  test "create returns not found for an inaccessible account" do
+    post api_v1_transactions_url,
+         params: { transaction: { account_id: SecureRandom.uuid, name: "Missing", amount: "1.00", date: Date.current } },
+         headers: api_headers(@create_only_api_key)
+
+    assert_response :not_found
+    assert_equal "not_found", JSON.parse(response.body).fetch("error")
+  end
+
+  test "create rejects category merchant and tags outside the family" do
+    other_family = families(:empty)
+    foreign_category = other_family.categories.create!(name: "Foreign category", color: "#000000")
+    foreign_merchant = other_family.merchants.create!(name: "Foreign merchant")
+    foreign_tag = other_family.tags.create!(name: "Foreign tag", color: "#000000")
+    base = { account_id: @account.id, name: "Scoped", amount: "1.00", date: Date.current }
+
+    [
+      base.merge(category_id: foreign_category.id),
+      base.merge(merchant_id: foreign_merchant.id),
+      base.merge(tag_ids: [ foreign_tag.id ])
+    ].each do |transaction|
+      assert_no_difference("@account.entries.count") do
+        post api_v1_transactions_url,
+             params: { transaction: transaction },
+             headers: api_headers(@create_only_api_key)
+      end
+      assert_response :unprocessable_entity
+    end
   end
 
   test "should create transaction with external idempotency key" do
@@ -615,6 +690,14 @@ class Api::V1::TransactionsControllerTest < ActionDispatch::IntegrationTest
     post api_v1_transactions_url,
          params: transaction_params,
          headers: api_headers(@api_key)
+    assert_response :unprocessable_entity
+  end
+
+  test "should reject non-finite transaction amounts" do
+    post api_v1_transactions_url,
+         params: { transaction: { account_id: @account.id, name: "Invalid amount", amount: "NaN", date: Date.current } },
+         headers: api_headers(@create_only_api_key)
+
     assert_response :unprocessable_entity
   end
 

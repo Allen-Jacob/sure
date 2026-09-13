@@ -7,6 +7,7 @@ module Dashboard
     ALLOWED_HOST = "app.agendrix.com"
     CALENDAR_PATH = %r{\A/api/calendar/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.ics\z}i
     CACHE_TTL = 15.minutes
+    STALE_CACHE_TTL = 7.days
     MAX_RESPONSE_BYTES = 1.megabyte
 
     class Error < StandardError; end
@@ -51,14 +52,20 @@ module Dashboard
     private
       def events
         Rails.cache.fetch(cache_key, expires_in: CACHE_TTL) do
-          parse(fetch_calendar)
+          parse(fetch_calendar).tap do |parsed|
+            Rails.cache.write(stale_cache_key, parsed, expires_in: STALE_CACHE_TTL)
+          end
         end
-      rescue Faraday::Error => error
-        raise Unavailable, error.message
+      rescue Faraday::Error, Unavailable => error
+        Rails.cache.read(stale_cache_key) || raise(Unavailable, error.message)
       end
 
       def cache_key
         [ "dashboard", "payroll_calendar", Digest::SHA256.hexdigest(@url) ]
+      end
+
+      def stale_cache_key
+        [ *cache_key, "stale" ]
       end
 
       def fetch_calendar

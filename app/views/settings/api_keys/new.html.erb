@@ -13,6 +13,7 @@
 
       <div class="space-y-2">
         <% [
+          ["transactions:create", t(".scope_transactions_create"), t(".scope_transactions_create_description")],
           ["read", t(".scope_read_only"), t(".scope_read_only_description")],
           ["read_write", t(".scope_read_write"), t(".scope_read_write_description")]
         ].each do |value, label, description| %>

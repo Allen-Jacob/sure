@@ -1,9 +1,6 @@
 module Dashboard
   class FinancialSnapshot
-    PAYROLL_KEYWORDS = %w[
-      salary payroll paycheck wages wage employer
-      salaire paie paye employeur rémunération remuneration
-    ].freeze
+    PAYROLL_KEYWORDS = Dashboard::PayrollForecast::PAYROLL_KEYWORDS
     REFUND_KEYWORDS = %w[refund reimbursement remboursement rebate].freeze
     DEFAULT_PAY_CYCLE_DAYS = 14
     RECENT_PAY_LOOKBACK = 120.days
@@ -107,35 +104,22 @@ module Dashboard
       end
 
       def calendar_paycheck
-        calendar_url = @settings.fetch("work_calendar_url").to_s
-        hourly_rate = BigDecimal(@settings.fetch("hourly_pay_rate").to_s)
-        anchor_date = Date.iso8601(@settings.fetch("pay_period_anchor_date").to_s)
-        payday_offset = Integer(@settings.fetch("payday_offset_days").to_s, 10)
-        return unless Dashboard::PayrollCalendar.valid_url?(calendar_url)
-        return unless hourly_rate.finite? && hourly_rate.positive? && payday_offset.between?(0, 31)
-
-        first_payday = anchor_date + @pay_cycle_days - 1 + payday_offset
-        elapsed_cycles = [ ((@today - first_payday).to_i.fdiv(@pay_cycle_days)).ceil, 0 ].max
-        period_start = anchor_date + elapsed_cycles * @pay_cycle_days
-        period_end = period_start + @pay_cycle_days - 1
-        next_date = period_end + payday_offset
-        scheduled_hours = Dashboard::PayrollCalendar.new(url: calendar_url).hours_between(period_start, period_end)
+        forecast = Dashboard::PayrollForecast.new(user: @user, currency: @currency, today: @today).next
+        return unless forecast
 
         {
-          name: I18n.t("pages.dashboard.cash_plan.paycheck_agendrix"),
-          amount: money(hourly_rate * scheduled_hours),
-          last_date: next_date - @pay_cycle_days,
-          next_date: next_date,
-          days_remaining: (next_date - @today).to_i,
+          name: forecast.name,
+          amount: forecast.amount,
+          last_date: forecast.last_date,
+          next_date: forecast.next_date,
+          days_remaining: forecast.days_remaining,
           estimated: true,
           configured: true,
           calendar: true,
-          scheduled_hours: scheduled_hours,
-          pay_period_start: period_start,
-          pay_period_end: period_end
+          scheduled_hours: forecast.scheduled_hours,
+          pay_period_start: forecast.pay_period_start,
+          pay_period_end: forecast.pay_period_end
         }
-      rescue KeyError, Date::Error, ArgumentError, Dashboard::PayrollCalendar::Error
-        nil
       end
 
       def recurring_paycheck

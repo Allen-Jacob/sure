@@ -510,7 +510,10 @@ class User < ApplicationRecord
   end
 
   def dashboard_section_hidden?(section_key)
-    preferences&.dig("hidden_sections", section_key) == true
+    saved = preferences&.dig("hidden_sections", section_key)
+    return saved unless saved.nil?
+
+    default_hidden_dashboard_sections.include?(section_key)
   end
 
   def dashboard_section_order
@@ -653,23 +656,30 @@ class User < ApplicationRecord
     def default_dashboard_section_order
       %w[
         insights_feed
-        cash_plan_available
         cash_plan_paycheck
-        cash_plan_budget
-        cash_plan_spending
-        cash_plan_credit_card
         cash_plan_allocation
+        cash_plan_credit_card
+        cash_plan_spending
+        net_worth_chart
+        cash_plan_available
+        cash_plan_budget
         cash_plan_goals
         cash_plan_purchases
         cash_plan_categories
         cash_plan_review
         money_flow
+        spending_trend
         outflows_donut
-        net_worth_chart
         balance_sheet
         investment_summary
         cashflow_sankey
       ]
+    end
+
+    # Keep overlapping widgets available in the picker without crowding the
+    # default dashboard. A saved explicit choice always wins.
+    def default_hidden_dashboard_sections
+      %w[cash_plan_available cash_plan_budget cash_plan_categories spending_trend]
     end
 
     def default_reports_section_order
