@@ -1,6 +1,7 @@
 ---
 fr:
   bills:
+    paid_by: payé par %{name}
     add_bill: Ajouter une facture
     add_payment: Ajouter un paiement
     ai_prompts:

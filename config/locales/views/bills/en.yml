@@ -1,6 +1,7 @@
 ---
 en:
   bills:
+    paid_by: paid by %{name}
     row_overdue: Overdue
     row_today: Today
     detect:

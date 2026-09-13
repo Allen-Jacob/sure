@@ -13,6 +13,7 @@ class RecurringTransaction < ApplicationRecord
   belongs_to :destination_account, optional: true, class_name: "Account"
   belongs_to :merchant, optional: true
   belongs_to :category, optional: true
+  belongs_to :payer, optional: true, class_name: "User"
   belongs_to :replaced_by, optional: true, class_name: "RecurringTransaction"
   # autosave: FrequencyPreset marks old rules for destruction and builds
   # replacements in one assignment, and only autosave honors that on save.
@@ -52,12 +53,16 @@ class RecurringTransaction < ApplicationRecord
   validate :merchant_or_name_present
   validate :category_belongs_to_family
   validate :accounts_belong_to_family
+  validate :payer_belongs_to_family
   validate :amount_variance_consistency
   validate :transfer_endpoints_consistent
   validate :payment_url_is_http
   validate :anchor_required_for_intervals
   validate :end_mode_fields_consistent
   validate :bill_type_matches_shape
+  validates :notify_days_before,
+            numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 30 },
+            allow_nil: true
 
   normalizes :payment_url, with: ->(url) { normalize_payment_url(url) }
 
@@ -148,6 +153,19 @@ class RecurringTransaction < ApplicationRecord
 
       errors.add(attribute, :wrong_family)
     end
+  end
+
+  def payer_belongs_to_family
+    return if payer_id.blank? || family_id.blank?
+
+    if payer.blank?
+      errors.add(:payer, :invalid)
+      return
+    end
+
+    return if payer.family_id == family_id
+
+    errors.add(:payer, :wrong_family)
   end
 
   def payment_url_is_http

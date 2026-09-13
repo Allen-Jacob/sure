@@ -1471,6 +1471,19 @@ class RecurringTransactionTest < ActiveSupport::TestCase
     assert_equal "Rent", build_recurring(merchant: nil, name: "Rent").display_name
   end
 
+  test "payer must belong to the recurring transaction family" do
+    recurring = build_recurring(payer: users(:inactive_trial_user))
+
+    assert_not recurring.valid?
+    assert recurring.errors.added?(:payer, :wrong_family)
+  end
+
+  test "reminder must be between zero and thirty days" do
+    assert build_recurring(notify_days_before: 0).valid?
+    assert build_recurring(notify_days_before: 30).valid?
+    assert_not build_recurring(notify_days_before: 31).valid?
+  end
+
 
   # next_expected_date only advances when a bank entry matches during sync, so
   # a bill settled through mark_paid!, a manual payment or the assistant froze

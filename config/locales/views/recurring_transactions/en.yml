@@ -83,6 +83,11 @@ en:
     form:
       payment_url_label: Payment link
       payment_url_placeholder: bank.example.com/pay
+      payer_blank: Unassigned
+      payer_label: Who pays this subscription or bill?
+      payer_hint: It stays visible in your bills and calendar even when another household member pays it.
+      notify_days_before_label: Remind me this many days before
+      notify_days_before_hint: Leave blank for the default reminder (%{default_days} days). Use 0 for the due date.
       payment_url_hint: Where you go to pay this bill. Opens in a new tab from your recurring and upcoming lists.
       autopay_label: Pays automatically
       autopay_hint: Keep it on your bills list, but stop treating it as something to do.

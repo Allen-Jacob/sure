@@ -25,4 +25,5 @@
       title: series.display_name do %>
   <span class="privacy-sensitive"><%= format_money(occurrence.resolved_expected_amount_money) %></span>
   <%= series.display_name %>
+  <% if series.payer %>&middot; <%= t("bills.paid_by", name: series.payer.display_name) %><% end %>
 <% end %>
