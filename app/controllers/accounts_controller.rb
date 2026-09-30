@@ -75,6 +75,9 @@ class AccountsController < ApplicationController
   end
 
   def show
+    if Current.user.preview_features_enabled? && !Current.family.recurring_transactions_disabled?
+      @upcoming_occurrences = RecurringTransaction::Upcoming.new(user: Current.user, account: @account).occurrences.limit(3).to_a
+    end
     @chart_view = params[:chart_view] || "balance"
     @tab = params[:tab]
     @accessible_account_ids = Current.user.accessible_accounts.pluck(:id).to_set

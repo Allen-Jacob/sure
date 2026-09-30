@@ -8,5 +8,13 @@
       reconciliation_statuses: @statement_reconciliation_statuses,
       can_manage_statements: @can_manage_statements
     ) do |account_page| %>
+  <% if @upcoming_occurrences %>
+    <% account_page.with_upcoming do %>
+      <%= render DS::Disclosure.new(title: t("upcoming.title"), variant: :card, align: :left) do %>
+        <%= render "transactions/scheduled_list", occurrences: @upcoming_occurrences, account: @account %>
+        <%= render DS::Link.new(text: t("upcoming.view_all"), href: transactions_path(tab: "upcoming"), variant: "outline") %>
+      <% end %>
+    <% end %>
+  <% end %>
   <%= account_page.with_activity_feed(feed_data: @activity_feed_data, pagy: @pagy, search: @q[:search]) %>
 <% end %>

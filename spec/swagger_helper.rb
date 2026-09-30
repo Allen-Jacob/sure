@@ -1777,6 +1777,30 @@ RSpec.configure do |config|
               pay_period_end: { type: :string, format: :date, nullable: true }
             }
           },
+          UpcomingOccurrence: {
+            type: :object,
+            required: %w[id recurring_transaction_id name date expected_amount currency direction amount_overridden status],
+            properties: {
+              id: { type: :string, format: :uuid },
+              recurring_transaction_id: { type: :string, format: :uuid },
+              name: { type: :string },
+              date: { type: :string, format: :date },
+              expected_amount: { type: :string, description: 'Absolute planned amount in the occurrence currency' },
+              currency: { type: :string },
+              direction: { type: :string, enum: %w[income expense transfer] },
+              account_id: { type: :string, format: :uuid, nullable: true },
+              destination_account_id: { type: :string, format: :uuid, nullable: true },
+              amount_overridden: { type: :boolean },
+              status: { type: :string, enum: %w[scheduled paid skipped missed] }
+            }
+          },
+          UpcomingResponse: {
+            type: :object,
+            required: %w[upcoming],
+            properties: {
+              upcoming: { type: :array, items: { '$ref' => '#/components/schemas/UpcomingOccurrence' } }
+            }
+          },
           PaycheckResponse: {
             type: :object,
             required: %w[currency paycheck],

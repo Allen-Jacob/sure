@@ -134,10 +134,13 @@ module Dashboard
         end
         return unless payroll_text?(recurring_name(recurring)) || candidates.one?
 
-        next_date = normalize_recurring_date(recurring.next_expected_date, recurring.expected_day_of_month)
+        occurrence = recurring.recurring_occurrences.open_status
+          .where("GREATEST(due_on, COALESCE(snoozed_until, due_on)) >= ?", @today)
+          .order(Arel.sql("GREATEST(due_on, COALESCE(snoozed_until, due_on)) ASC"), :id).first
+        next_date = occurrence&.effective_due_on || normalize_recurring_date(recurring.next_expected_date, recurring.expected_day_of_month)
         {
           name: recurring_name(recurring),
-          amount: money((recurring.expected_amount_avg || recurring.amount).abs),
+          amount: money(occurrence ? occurrence.resolved_expected_amount : (recurring.expected_amount_avg || recurring.amount).abs),
           last_date: recurring.last_occurrence_date,
           next_date: next_date,
           days_remaining: (next_date - @today).to_i,

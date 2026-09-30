@@ -1,0 +1,13 @@
+<%# locals: (paycheck:) %>
+<section class="flex items-center justify-between gap-4 rounded-xl bg-container p-4 shadow-border-xs">
+  <div>
+    <h2 class="text-sm font-medium text-primary"><%= t("upcoming.next_paycheck") %></h2>
+    <% if paycheck %>
+      <p class="text-xs text-secondary"><%= l(paycheck.fetch(:next_date), format: :long) %> · <%= t("upcoming.estimated") %></p>
+      <p class="text-lg font-medium text-primary privacy-sensitive"><%= format_money(paycheck.fetch(:amount)) %></p>
+    <% else %>
+      <p class="text-sm text-secondary"><%= t("upcoming.no_paycheck") %></p>
+    <% end %>
+  </div>
+  <%= render DS::Link.new(text: t("upcoming.configure_paycheck"), href: settings_preferences_path, variant: "outline") %>
+</section>

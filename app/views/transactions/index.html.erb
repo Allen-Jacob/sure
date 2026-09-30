@@ -46,6 +46,7 @@
     </div>
   </header>
 
+  <%= render "transactions/next_paycheck", paycheck: @next_paycheck %>
   <%= render "summary", totals: @search.totals %>
   <% if Current.family.recurring_transactions_disabled? %>
     <%= render "transactions/list", transactions: @transactions, projected_recurring: @projected_recurring, q: params[:q], pagy: @pagy %>
@@ -64,7 +65,13 @@
 
       <% tabs.with_panel(tab_id: "upcoming") do %>
         <div class="bg-container rounded-xl shadow-border-xs">
-          <%= render "transactions/upcoming" %>
+          <% if @upcoming_occurrences %>
+            <div class="p-4">
+              <%= render "transactions/scheduled_list", occurrences: @upcoming_occurrences %>
+            </div>
+          <% else %>
+            <%= render "transactions/upcoming" %>
+          <% end %>
         </div>
       <% end %>
     <% end %>

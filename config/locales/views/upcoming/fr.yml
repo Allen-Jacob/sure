@@ -1,0 +1,12 @@
+fr:
+  upcoming:
+    title: À venir — les trois prochaines transactions
+    empty: Aucune transaction programmée dans les 90 prochains jours.
+    planned: Prévu
+    schedule: Programmer une transaction
+    schedule_paycheck: Programmer une paye
+    next_paycheck: Prochaine paye prédite
+    estimated: Montant estimé
+    no_paycheck: Configurez votre paye pour voir sa prochaine date et son montant prévu.
+    configure_paycheck: Ajuster la paye
+    view_all: Voir toutes les transactions à venir

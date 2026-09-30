@@ -1,0 +1,17 @@
+<%# locals: (occurrences:, account: nil) %>
+<div class="space-y-3">
+  <% if occurrences.empty? %>
+    <p class="text-sm text-secondary"><%= t("upcoming.empty") %></p>
+  <% end %>
+  <% occurrences.each do |occurrence| %>
+    <%= link_to recurring_occurrence_path(occurrence), data: { turbo_frame: "modal" }, class: "flex items-center justify-between gap-4 rounded-lg p-3 hover:bg-container-inset focus-ring" do %>
+      <div class="min-w-0">
+        <p class="truncate text-sm font-medium text-primary"><%= occurrence.recurring_transaction.display_name %></p>
+        <p class="text-xs text-secondary"><%= l(occurrence.effective_due_on, format: :long) %> · <%= t("upcoming.planned") %></p>
+      </div>
+      <p class="shrink-0 text-sm font-medium text-primary privacy-sensitive"><%= format_money(upcoming_amount(occurrence, account: account)) %></p>
+    <% end %>
+  <% end %>
+  <%= render DS::Link.new(text: t("upcoming.schedule"), icon: "plus", href: new_recurring_transaction_path(account_id: account&.id), frame: :modal, variant: "outline") %>
+  <%= render DS::Link.new(text: t("upcoming.schedule_paycheck"), href: new_recurring_transaction_path(income: true, account_id: account&.id), frame: :modal, variant: "outline") %>
+</div>

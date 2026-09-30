@@ -79,6 +79,13 @@ class TransactionsController < ApplicationController
       Current.accessible_entries.uncategorized_transactions.count
     end
 
+    @next_paycheck = Dashboard::FinancialSnapshot.new(
+      family: Current.family, user: Current.user, accounts: Current.user.accessible_accounts.visible
+    ).paycheck_summary
+    if Current.user.preview_features_enabled? && !Current.family.recurring_transactions_disabled?
+      @upcoming_occurrences = RecurringTransaction::Upcoming.new(user: Current.user).occurrences.to_a
+    end
+
     # Load projected recurring transactions for next 10 days
     @projected_recurring = Rails.cache.fetch(projected_recurring_cache_key, expires_in: 1.day) do
       Current.family.recurring_transactions

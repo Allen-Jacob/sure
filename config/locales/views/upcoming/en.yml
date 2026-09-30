@@ -1,0 +1,12 @@
+en:
+  upcoming:
+    title: Upcoming — next three transactions
+    empty: No transactions scheduled in the next 90 days.
+    planned: Planned
+    schedule: Schedule a transaction
+    schedule_paycheck: Schedule a paycheck
+    next_paycheck: Next predicted paycheck
+    estimated: Estimated amount
+    no_paycheck: Set up your paycheck to see its next date and expected amount.
+    configure_paycheck: Adjust paycheck
+    view_all: View all upcoming transactions

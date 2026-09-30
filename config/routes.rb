@@ -767,6 +767,7 @@ Rails.application.routes.draw do
       resources :push_subscriptions, only: [ :create, :destroy ]
       resource :family_settings, only: [ :show ], controller: :family_settings
       resource :paycheck, only: [ :show ], controller: :paycheck
+      resources :upcoming, only: %i[index update], controller: :upcoming
       post :sync, to: "sync#create", as: :sync_job
       resources :syncs, only: [ :index, :show ] do
         get :latest, on: :collection

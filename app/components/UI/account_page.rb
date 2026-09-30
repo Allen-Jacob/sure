@@ -3,6 +3,7 @@ class UI::AccountPage < ApplicationComponent
               :can_manage_statements
 
   renders_one :activity_feed, ->(feed_data:, pagy:, search:) { UI::Account::ActivityFeed.new(feed_data: feed_data, pagy: pagy, search: search) }
+  renders_one :upcoming
 
   def initialize(account:, chart_view: nil, chart_period: nil, active_tab: nil, statement_coverage: nil, statements: [],
                  reconciliation_statuses: {}, can_manage_statements: false)

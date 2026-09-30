@@ -3326,6 +3326,67 @@ components:
           type: string
           format: date
           nullable: true
+    UpcomingOccurrence:
+      type: object
+      required:
+      - id
+      - recurring_transaction_id
+      - name
+      - date
+      - expected_amount
+      - currency
+      - direction
+      - amount_overridden
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        recurring_transaction_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        date:
+          type: string
+          format: date
+        expected_amount:
+          type: string
+          description: Absolute planned amount in the occurrence currency
+        currency:
+          type: string
+        direction:
+          type: string
+          enum:
+          - income
+          - expense
+          - transfer
+        account_id:
+          type: string
+          format: uuid
+          nullable: true
+        destination_account_id:
+          type: string
+          format: uuid
+          nullable: true
+        amount_overridden:
+          type: boolean
+        status:
+          type: string
+          enum:
+          - scheduled
+          - paid
+          - skipped
+          - missed
+    UpcomingResponse:
+      type: object
+      required:
+      - upcoming
+      properties:
+        upcoming:
+          type: array
+          items:
+            "$ref": "#/components/schemas/UpcomingOccurrence"
     PaycheckResponse:
       type: object
       required:
@@ -3532,6 +3593,89 @@ components:
               type: integer
               minimum: 0
 paths:
+  "/api/v1/upcoming":
+    get:
+      tags:
+      - Upcoming
+      summary: List scheduled transactions
+      description: Open occurrences ordered by effective due date. Defaults to the next
+        90 days; maximum range is 366 days. GET /api/v1/paycheck returns the next predicted
+        paycheck.
+      security:
+      - apiKeyAuth: []
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: account_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: scheduled transactions
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UpcomingResponse"
+        '401':
+          description: unauthorized
+        '404':
+          description: account not accessible
+        '422':
+          description: invalid date range
+  "/api/v1/upcoming/{id}":
+    patch:
+      tags:
+      - Upcoming
+      summary: Adjust the expected amount for one scheduled occurrence
+      security:
+      - apiKeyAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - expected_amount
+              properties:
+                expected_amount:
+                  type: string
+                  example: '1500.25'
+      responses:
+        '200':
+          description: amount adjusted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UpcomingOccurrence"
+        '401':
+          description: unauthorized
+        '403':
+          description: read-only key
+        '404':
+          description: occurrence not accessible
+        '422':
+          description: invalid amount
   "/api/v1/accounts":
     get:
       summary: List accounts

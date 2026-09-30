@@ -131,6 +131,10 @@ class RecurringTransactionsController < ApplicationController
       frequency_preset: income ? "biweekly" : "monthly",
       first_due_on: Date.current
     )
+    if params[:account_id].present?
+      @recurring_transaction.account = Current.user.accessible_accounts
+        .merge(Account.writable_by(Current.user)).find(params[:account_id])
+    end
     @recurring_transaction.is_income = income
 
     # Accessible, not merely same-family: prefilling reads the entry's name,
