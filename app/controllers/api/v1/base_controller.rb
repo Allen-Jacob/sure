@@ -65,6 +65,9 @@ class Api::V1::BaseController < ApplicationController
       # Manually verify the token (bypassing doorkeeper_authorize! which had scope issues)
       token_string = request.authorization&.split(" ")&.last
       access_token = Doorkeeper::AccessToken.by_token(token_string)
+      # Presenting a refreshed token proves the client received it, so the
+      # refresh token it replaced is retired, as doorkeeper_authorize! would.
+      access_token&.revoke_previous_refresh_token!
 
       # Check token validity and scope (read_write includes read access)
       has_sufficient_scope = access_token&.scopes&.include?("read") || access_token&.scopes&.include?("read_write")

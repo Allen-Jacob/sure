@@ -21,6 +21,27 @@ class Oauth::TokensControllerTest < ActionDispatch::IntegrationTest
     assert_not token.reload.revoked?, "the predecessor stays valid until the successor is first used"
   end
 
+  test "using a refreshed token at /mcp retires the token it replaced" do
+    replaced = refresh!(issue_token.plaintext_refresh_token)
+    current = refresh!(replaced["refresh_token"])
+
+    post "/mcp", params: { jsonrpc: "2.0", id: 1, method: "initialize" }.to_json,
+      headers: { "Content-Type" => "application/json", "Authorization" => "Bearer #{current["access_token"]}" }
+    assert_response :success
+
+    assert_retired(replaced)
+  end
+
+  test "using a refreshed token at the API retires the token it replaced" do
+    replaced = refresh!(issue_token.plaintext_refresh_token)
+    current = refresh!(replaced["refresh_token"])
+
+    get "/api/v1/test", headers: { "Authorization" => "Bearer #{current["access_token"]}" }
+    assert_response :success
+
+    assert_retired(replaced)
+  end
+
   test "refresh is refused once the user is inactive, even if their tokens were not revoked" do
     token = issue_token
     @user.update_column(:active, false)
@@ -125,6 +146,21 @@ class Oauth::TokensControllerTest < ActionDispatch::IntegrationTest
         client_id: @oauth_app.uid,
         client_secret: @oauth_app.plaintext_secret
       }
+    end
+
+    def refresh!(refresh_token)
+      post_refresh refresh_token
+      assert_response :success
+      response.parsed_body
+    end
+
+    def assert_retired(token_response)
+      assert Doorkeeper::AccessToken.by_token(token_response["access_token"]).revoked?
+
+      post_refresh token_response["refresh_token"]
+
+      assert_response :bad_request
+      assert_equal "invalid_grant", response.parsed_body["error"]
     end
 
     def post_code(code)

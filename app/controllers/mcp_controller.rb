@@ -149,6 +149,9 @@ class McpController < ApplicationController
 
     def authenticate_via_doorkeeper(token)
       access_token = Doorkeeper::AccessToken.by_token(token)
+      # Presenting a refreshed token proves the client received it, so the
+      # refresh token it replaced is retired, as doorkeeper_authorize! would.
+      access_token&.revoke_previous_refresh_token!
       return false unless access_token&.accessible?
       return false unless access_token.scopes.include?(REQUIRED_SCOPE)
 
